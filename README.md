@@ -1,6 +1,6 @@
-# SkillForge
+# AscendIQ
 
-SkillForge is an AI-powered career operating system for students and early-career professionals. It combines a FastAPI backend with a React/Vite frontend to collect a learner profile, analyze career readiness, generate growth roadmaps, recommend opportunities, review resumes, and prepare interview material.
+AscendIQ is an AI-powered career operating system for students and early-career professionals. It combines a FastAPI backend with a React/Vite frontend to collect a learner profile, analyze career readiness, generate growth roadmaps, recommend opportunities, review resumes, and prepare interview material.
 
 The backend currently exposes the API surface for authentication, profile upload, roadmap, opportunity matching, and a multi-agent mentor analysis flow. The frontend provides the landing page, profile intake screen, dashboard, and roadmap UI.
 
@@ -44,7 +44,7 @@ The backend currently exposes the API surface for authentication, profile upload
 ## Project Structure
 
 ```text
-SkillForge/
+AscendIQ/
 +-- backend/
 |   +-- app/
 |   |   +-- api/endpoints/
@@ -98,7 +98,7 @@ Use these steps when setting up the project on a new machine.
 
 ```powershell
 git clone <repository-url>
-cd SkillForge
+cd AscendIQ
 ```
 
 Replace `<repository-url>` with the actual Git remote URL.
@@ -108,9 +108,9 @@ Replace `<repository-url>` with the actual Git remote URL.
 Create `backend/.env`:
 
 ```env
-PROJECT_NAME=SkillForge
+PROJECT_NAME=AscendIQ
 MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=skillforge
+DATABASE_NAME=ascendiq
 GEMINI_API_KEY=your_gemini_api_key
 OPENAI_API_KEY=
 FIREBASE_SERVICE_ACCOUNT_PATH=
@@ -181,9 +181,9 @@ pip install -r requirements.txt
 Create `backend/.env`:
 
 ```env
-PROJECT_NAME=SkillForge
+PROJECT_NAME=AscendIQ
 MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=skillforge
+DATABASE_NAME=ascendiq
 GEMINI_API_KEY=your_gemini_api_key
 OPENAI_API_KEY=
 FIREBASE_SERVICE_ACCOUNT_PATH=
