@@ -13,50 +13,58 @@ import {
 } from 'recharts';
 import { AlertCircle, Briefcase, CalendarCheck, FileText, MessageSquare, Sparkles, Zap } from 'lucide-react';
 import AppShell from '../components/AppShell';
-
-const radarData = [
-  { subject: 'Technical Skills', A: 85, fullMark: 100 },
-  { subject: 'Projects', A: 70, fullMark: 100 },
-  { subject: 'Resume', A: 82, fullMark: 100 },
-  { subject: 'Interview', A: 65, fullMark: 100 },
-  { subject: 'Exposure', A: 58, fullMark: 100 },
-  { subject: 'Consistency', A: 74, fullMark: 100 },
-];
-
-const skillGapData = [
-  { skill: 'ML', current: 78, target: 90 },
-  { skill: 'PyTorch', current: 62, target: 85 },
-  { skill: 'System Design', current: 45, target: 75 },
-  { skill: 'MLOps', current: 38, target: 70 },
-  { skill: 'DSA', current: 68, target: 80 },
-];
-
-const priorities = [
-  'Ship one PyTorch mini-project with a clean README',
-  'Add transformer and model deployment keywords to resume',
-  'Practice 6 medium DSA problems focused on arrays and graphs',
-  'Apply to 3 AI internships with 80%+ role match',
-];
+import { useAnalysis } from '../analysis';
 
 const Dashboard = () => {
+  const { record } = useAnalysis();
+
+if (!record || !record.analysis || !record.profile) {
+  return (
+    <AppShell>
+      <div className="text-center py-10">
+        <h2 className="text-2xl font-bold text-red-400">
+          No analysis data available
+        </h2>
+        <p className="text-slate-400 mt-2">
+          Please upload your profile and run analysis again.
+        </p>
+      </div>
+    </AppShell>
+  );
+}
+
+const analysis = record.analysis;
+const profile = record.profile;
+
+const radarData = (analysis.radar || []).map((point: any) => ({
+  ...point,
+  A: point.score,
+  fullMark: 100,
+}));
+
+const updatedAt = record.updated_at
+  ? new Date(record.updated_at).toLocaleDateString()
+  : "Unknown";
+
   return (
     <AppShell>
       <header className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start mb-8">
         <div>
           <p className="text-sm text-indigo-300 font-medium mb-2">Career command center</p>
-          <h1 className="text-3xl font-bold">Hello, Alex</h1>
-          <p className="text-slate-400">Targeting: AI Engineer | Student/Entry Level | Last analysis: Today</p>
+          <h1 className="text-3xl font-bold">Hello, {profile.full_name || 'there'}</h1>
+          <p className="text-slate-400">Targeting: {profile.target_role} | Last analysis: {updatedAt}</p>
+          <p className="mt-3 max-w-3xl text-sm text-slate-300">{analysis.user_summary}</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 w-fit">
+        <a href="/upload" className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2 w-fit">
           <Zap size={18} /> Update Analysis
-        </button>
+        </a>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Career Health Score" value="78" trend="+5%" detail="Strong resume, improving technical depth" />
-        <StatCard title="Roadmap Progress" value="42%" trend="On Track" detail="2 of 5 current milestones complete" />
-        <StatCard title="ATS Score" value="82" trend="Good" detail="Missing 6 high-value keywords" />
-        <StatCard title="Interview Readiness" value="65" trend="+12%" detail="Coding practice needs consistency" />
+        <StatCard title="Career Health Score" value={`${analysis.stats?.career_health_score ?? 0}`} trend="AI scored" detail="Overall readiness from your resume and self-description" />
+        <StatCard title="Roadmap Progress" value={`${analysis.stats?.roadmap_progress ?? 0}%`} trend="Active" detail="Estimated progress across your current growth plan" />
+        <StatCard title="ATS Score" value={`${analysis.stats?.ats_score ?? 0}`} trend="Resume" detail="Keyword and proof strength for your target role" />
+        <StatCard title="Interview Readiness" value={`${analysis.stats?.interview_readiness ?? 0}`} trend="Practice" detail="Current interview preparation signal" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
@@ -73,10 +81,10 @@ const Dashboard = () => {
           </div>
         </Panel>
 
-        <Panel title="Skill Gap Against AI Engineer Roles" className="xl:col-span-2">
+        <Panel title={`Skill Gap Against ${profile.target_role} Roles`} className="xl:col-span-2">
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={skillGapData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+              <BarChart data={analysis.skill_gaps || []} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                 <XAxis dataKey="skill" stroke="#94a3b8" tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" tickLine={false} axisLine={false} domain={[0, 100]} />
                 <Bar dataKey="target" fill="#334155" radius={[6, 6, 0, 0]} />
@@ -90,15 +98,15 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <Panel title="Mentor's Strategic Action Plan">
           <div className="space-y-4">
-            <ActionItem title="Master Supervised Learning" desc="Complete 3 modules and publish notes with examples." impact="High" />
-            <ActionItem title="Enhance Resume Keywords" desc="Add PyTorch, model evaluation, and deployment proof points." impact="Medium" />
-            <ActionItem title="Build Hiring Signal" desc="Maintain a visible GitHub streak and pin your best AI project." impact="High" />
+            {(analysis.strategic_plan || []).map((item) => (
+              <ActionItem key={item.title} title={item.title} desc={item.description} impact={item.impact} />
+            ))}
           </div>
         </Panel>
 
         <Panel title="This Week's Priority Queue">
           <div className="space-y-3">
-            {priorities.map((priority, index) => (
+            {(analysis.priorities || []).map((priority, index) => (
               <div key={priority} className="flex gap-3 rounded-xl border border-slate-800 bg-slate-800/25 p-4">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-sm text-indigo-300">
                   {index + 1}
@@ -110,11 +118,11 @@ const Dashboard = () => {
         </Panel>
 
         <Panel title="Live Career Signals">
-          <Signal icon={<Briefcase size={18} />} label="Best opportunity match" value="AI Research Intern - 91%" />
-          <Signal icon={<FileText size={18} />} label="Resume blocker" value="Missing deployment metrics" />
-          <Signal icon={<MessageSquare size={18} />} label="Interview focus" value="Graphs, model tradeoffs, ML basics" />
-          <Signal icon={<CalendarCheck size={18} />} label="Next milestone" value="PyTorch portfolio project in 9 days" />
-          <Signal icon={<AlertCircle size={18} />} label="Risk" value="Industry exposure is below target" />
+          <Signal icon={<Briefcase size={18} />} label="Best opportunity match" value={analysis.signals?.best_opportunity_match|| "N/A"} />
+          <Signal icon={<FileText size={18} />} label="Resume blocker" value={analysis.signals?.resume_blocker || "N/A"} />
+          <Signal icon={<MessageSquare size={18} />} label="Interview focus" value={analysis.signals?.interview_focus || "N/A"} />
+          <Signal icon={<CalendarCheck size={18} />} label="Next milestone" value={analysis.signals?.next_milestone || "N/A"} />
+          <Signal icon={<AlertCircle size={18} />} label="Risk" value={analysis.signals?.risk || "N/A"} />
         </Panel>
       </div>
     </AppShell>

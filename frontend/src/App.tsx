@@ -9,24 +9,28 @@ import ProfileUpload from './pages/ProfileUpload';
 import ResumeOptimization from './pages/ResumeOptimization';
 import Roadmap from './pages/Roadmap';
 import { AuthProvider } from './auth';
+import { AnalysisProvider } from './analysis';
+import AnalysisRequired from './components/AnalysisRequired';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-background text-white">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/upload" element={<ProtectedRoute><ProfileUpload /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
-            <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
-            <Route path="/resume" element={<ProtectedRoute><ResumeOptimization /></ProtectedRoute>} />
-            <Route path="/interview" element={<ProtectedRoute><InterviewPrep /></ProtectedRoute>} />
-          </Routes>
-        </div>
+        <AnalysisProvider>
+          <div className="min-h-screen bg-background text-white">
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/upload" element={<ProtectedRoute><ProfileUpload /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><AnalysisRequired><Dashboard /></AnalysisRequired></ProtectedRoute>} />
+              <Route path="/roadmap" element={<ProtectedRoute><AnalysisRequired><Roadmap /></AnalysisRequired></ProtectedRoute>} />
+              <Route path="/opportunities" element={<ProtectedRoute><AnalysisRequired><Opportunities /></AnalysisRequired></ProtectedRoute>} />
+              <Route path="/resume" element={<ProtectedRoute><AnalysisRequired><ResumeOptimization /></AnalysisRequired></ProtectedRoute>} />
+              <Route path="/interview" element={<ProtectedRoute><AnalysisRequired><InterviewPrep /></AnalysisRequired></ProtectedRoute>} />
+            </Routes>
+          </div>
+        </AnalysisProvider>
       </AuthProvider>
     </Router>
   );

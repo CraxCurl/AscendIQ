@@ -1,6 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict
-
 import bcrypt
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,12 +6,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.services import storage
 
 router = APIRouter()
 security = HTTPBearer()
-
-# Replace this in-memory store with MongoDB persistence before production use.
-users_by_email: Dict[str, dict] = {}
 
 
 class AuthRequest(BaseModel):
@@ -24,6 +20,11 @@ class AuthRequest(BaseModel):
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: dict
+
+
+class SignupResponse(BaseModel):
+    message: str
     user: dict
 
 
@@ -69,7 +70,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             detail="Invalid authentication token",
         ) from exc
 
-    user = users_by_email.get(token.sub)
+    user = storage.get_user(token.sub)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,7 +80,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 @router.post("/login")
 async def login(credentials: AuthRequest):
-    user = users_by_email.get(credentials.email.lower())
+    user = storage.get_user(credentials.email.lower())
     if not user or not verify_password(credentials.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,15 +92,14 @@ async def login(credentials: AuthRequest):
 @router.post("/signup")
 async def signup(credentials: AuthRequest):
     email = credentials.email.lower()
-    if email in users_by_email:
+    if storage.get_user(email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="An account with this email already exists",
         )
 
-    user = {"email": email, "hashed_password": hash_password(credentials.password)}
-    users_by_email[email] = user
-    return AuthResponse(access_token=create_access_token(email), user=public_user(user))
+    user = storage.create_user(email, hash_password(credentials.password))
+    return SignupResponse(message="Account created. Please log in to continue.", user=public_user(user))
 
 
 @router.get("/me")

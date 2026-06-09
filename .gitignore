@@ -34,6 +34,7 @@ htmlcov/
 backend/.env
 backend/.env.*
 backend/firebase-sdk.json
+backend/storage/*.json
 *.pem
 *.key
 *.crt

@@ -9,16 +9,21 @@ type AuthResult = {
   user: AuthUser;
 };
 
+type SignupResult = {
+  message: string;
+  user: AuthUser;
+};
+
 type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<string>;
   logout: () => void;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://ascendiq.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
 const TOKEN_STORAGE_KEY = 'ascendiq_token';
 const USER_STORAGE_KEY = 'ascendiq_user';
 
@@ -29,7 +34,7 @@ const readStoredUser = () => {
   return storedUser ? (JSON.parse(storedUser) as AuthUser) : null;
 };
 
-const authenticate = async (path: 'login' | 'signup', email: string, password: string) => {
+const requestAuth = async <T,>(path: 'login' | 'signup', email: string, password: string) => {
   const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -41,7 +46,7 @@ const authenticate = async (path: 'login' | 'signup', email: string, password: s
     throw new Error(error?.detail ?? 'Authentication failed');
   }
 
-  return (await response.json()) as AuthResult;
+  return (await response.json()) as T;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -61,10 +66,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       isAuthenticated: Boolean(token),
       login: async (email, password) => {
-        storeSession(await authenticate('login', email, password));
+        storeSession(await requestAuth<AuthResult>('login', email, password));
       },
       signup: async (email, password) => {
-        storeSession(await authenticate('signup', email, password));
+        const result = await requestAuth<SignupResult>('signup', email, password);
+        return result.message;
       },
       logout: () => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);

@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Github, Linkedin, Briefcase, Loader2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AlertCircle, CheckCircle2, Upload, FileText, Github, Linkedin, Briefcase, Loader2, MessageSquareText, Sparkles, UserRound } from 'lucide-react';
+import { submitIntake } from '../api';
+import { useAnalysis } from '../analysis';
+import { useAuth } from '../auth';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = [
@@ -11,11 +14,21 @@ const ALLOWED_FILE_EXTENSIONS = ['.pdf', '.docx'];
 
 const ProfileUpload = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { token, user } = useAuth();
+  const { setRecord } = useAnalysis();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState('');
+  const [banner, setBanner] = useState((location.state as { banner?: string } | null)?.banner ?? '');
+  const [fullName, setFullName] = useState('');
+  const [targetRole, setTargetRole] = useState('AI Engineer');
+  const [skills, setSkills] = useState('');
+  const [githubUrl, setGithubUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [aboutYourself, setAboutYourself] = useState('');
 
   const validateAndSetFile = (file?: File) => {
     if (!file) return;
@@ -46,14 +59,49 @@ const ProfileUpload = () => {
     validateAndSetFile(e.dataTransfer.files[0]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadError('');
+
+    if (!selectedFile && !aboutYourself.trim()) {
+      setUploadError('Upload a resume or describe yourself before generating analytics.');
+      setBanner('AscendIQ needs at least one strong signal: your resume or your own story.');
+      return;
+    }
+
+    if (!token) {
+      setUploadError('Please log in again before starting analysis.');
+      return;
+    }
+
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    setBanner('Reading your profile signals and preparing the AI analysis...');
+
+    const formData = new FormData();
+    formData.append('full_name', fullName);
+    formData.append('target_role', targetRole);
+    formData.append('about_yourself', aboutYourself);
+    formData.append('github_url', githubUrl);
+    formData.append('linkedin_url', linkedinUrl);
+    formData.append(
+      'skills',
+      JSON.stringify(skills.split(',').map((skill) => skill.trim()).filter(Boolean))
+    );
+    if (selectedFile) {
+      formData.append('resume', selectedFile);
+    }
+
+    try {
+      const record = await submitIntake(token, formData);
+      setRecord(record);
+      setBanner('Analysis complete. Your dashboard is ready.');
       navigate('/dashboard');
-    }, 3000);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Could not generate analytics.');
+      setBanner('The analysis did not finish. Review the details and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,16 +109,52 @@ const ProfileUpload = () => {
       <div className="max-w-3xl w-full">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Complete Your Profile</h1>
-          <p className="text-slate-400 text-lg">Help AscendIQ understand your background to build your career OS.</p>
+          <p className="text-slate-400 text-lg">Help AscendIQ understand your background to build your live career OS.</p>
         </header>
 
+        {banner && (
+          <div className="mb-6 flex gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm text-indigo-100">
+            {loading ? <Loader2 className="mt-0.5 shrink-0 animate-spin" size={18} /> : <Sparkles className="mt-0.5 shrink-0" size={18} />}
+            <p>{banner}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                <UserRound size={16} /> Full Name
+              </span>
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder={user?.email?.split('@')[0] ?? 'Your name'}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                <Sparkles size={16} /> Skills
+              </span>
+              <input
+                value={skills}
+                onChange={(event) => setSkills(event.target.value)}
+                placeholder="Python, React, SQL, Figma"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </label>
+          </section>
+
           {/* Target Role */}
           <section>
             <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
               <Briefcase size={16} /> Target Career Role
             </label>
-            <select className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select
+              value={targetRole}
+              onChange={(event) => setTargetRole(event.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
               <option>AI Engineer</option>
               <option>Data Scientist</option>
               <option>Software Engineer</option>
@@ -128,7 +212,20 @@ const ProfileUpload = () => {
                 {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)}MB selected` : 'Maximum file size: 5MB'}
               </p>
             </div>
-            {uploadError && <p className="text-sm text-rose-400 mt-3">{uploadError}</p>}
+          </section>
+
+          <section>
+            <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+              <MessageSquareText size={16} /> Describe Yourself
+            </label>
+            <textarea
+              value={aboutYourself}
+              onChange={(event) => setAboutYourself(event.target.value)}
+              rows={7}
+              placeholder="Tell AscendIQ about your background, projects, goals, strengths, doubts, preferred roles, or anything your resume misses."
+              className="w-full resize-none bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-2 text-xs text-slate-500">Resume or this section is compulsory. Adding both produces better analytics.</p>
           </section>
 
           {/* Social Links */}
@@ -139,6 +236,8 @@ const ProfileUpload = () => {
               </label>
               <input
                 type="url"
+                value={githubUrl}
+                onChange={(event) => setGithubUrl(event.target.value)}
                 placeholder="https://github.com/yourusername"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
@@ -149,6 +248,8 @@ const ProfileUpload = () => {
               </label>
               <input
                 type="url"
+                value={linkedinUrl}
+                onChange={(event) => setLinkedinUrl(event.target.value)}
                 placeholder="https://linkedin.com/in/yourusername"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
@@ -162,12 +263,21 @@ const ProfileUpload = () => {
           >
             {loading ? (
               <>
-                <Loader2 className="animate-spin" /> Analyzing Profile...
+                <Loader2 className="animate-spin" /> Generating AI Analytics...
               </>
             ) : (
-              "Initialize AI Analysis"
+              <>
+                <CheckCircle2 size={20} /> Initialize AI Analysis
+              </>
             )}
           </button>
+
+          {uploadError && (
+            <div className="flex gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <AlertCircle className="mt-0.5 shrink-0" size={16} />
+              <p>{uploadError}</p>
+            </div>
+          )}
         </form>
       </div>
     </div>
