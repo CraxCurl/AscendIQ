@@ -18,7 +18,7 @@ type AuthContextValue = {
   logout: () => void;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://ascendiq.onrender.com';
 const TOKEN_STORAGE_KEY = 'ascendiq_token';
 const USER_STORAGE_KEY = 'ascendiq_user';
 
