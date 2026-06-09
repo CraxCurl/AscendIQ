@@ -112,7 +112,7 @@ If you use a Firebase service account, set `FIREBASE_SERVICE_ACCOUNT_PATH` to th
 Run the API:
 
 ```powershell
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --reload
 ```
 
 The API will be available at:
@@ -144,13 +144,15 @@ Start the backend in one terminal:
 ```powershell
 cd backend
 ..\.venv\Scripts\Activate.ps1
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+(make sure u installed the dependencies as mentioned above)
+uvicorn main:app --reload
 ```
 
 Start the frontend in another terminal:
 
 ```powershell
 cd frontend
+npm install
 npm run dev
 ```
 
@@ -198,24 +200,6 @@ Example mentor analysis payload:
   ],
   "experience_level": "Student/Entry Level"
 }
-```
-
-## Available Scripts
-
-### Backend
-
-```powershell
-uvicorn main:app --reload
-python testmongo.py
-```
-
-### Frontend
-
-```powershell
-npm run dev
-npm run build
-npm run preview
-npm run lint
 ```
 
 ## Current Implementation Notes
