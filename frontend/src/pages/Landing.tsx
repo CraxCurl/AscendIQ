@@ -30,13 +30,13 @@ const Landing = () => {
         </h1>
 
         <p className="text-xl text-slate-400 max-w-2xl mb-12">
-          SkillForge uses multi-agent AI to analyze your profile, generate personalized roadmaps,
+          AscendIQ uses multi-agent AI to analyze your profile, generate personalized roadmaps,
           match you with opportunities, and mentor you toward professional excellence.
         </p>
 
         <div className="flex flex-col md:flex-row gap-4">
           <button
-            onClick={() => navigate('/upload')}
+            onClick={() => navigate('/login')}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-all transform hover:scale-105 flex items-center gap-2"
           >
             Get Started <ArrowRight size={20} />
@@ -52,7 +52,7 @@ const Landing = () => {
 
       <section id="how-it-works" className="px-6 pb-20 scroll-mt-8">
         <div className="mb-10">
-          <h2 className="text-3xl font-bold mb-3">How SkillForge Works</h2>
+          <h2 className="text-3xl font-bold mb-3">How AscendIQ Works</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
             Upload your profile once, then let the mentor agents turn it into an actionable career plan.
           </p>

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, profile, agents, roadmap, opportunities
 from app.core.config import settings
 
-app = FastAPI(title="SkillForge API", version="1.0.0")
+app = FastAPI(title="AscendIQ API", version="1.0.0")
 
 # CORS Configuration
 app.add_middleware(
@@ -23,7 +23,7 @@ app.include_router(opportunities.router, prefix="/api/opportunities", tags=["Opp
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to SkillForge AI Career Operating System API"}
+    return {"message": "Welcome to AscendIQ AI Career Operating System API"}
 
 if __name__ == "__main__":
     import uvicorn
