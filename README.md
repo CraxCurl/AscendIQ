@@ -63,10 +63,15 @@ SkillForge/
 |   +-- testmongo.py
 +-- frontend/
     +-- src/
+    |   +-- components/
+    |   |   +-- AppShell.tsx
     |   +-- pages/
     |   |   +-- Dashboard.tsx
+    |   |   +-- InterviewPrep.tsx
     |   |   +-- Landing.tsx
+    |   |   +-- Opportunities.tsx
     |   |   +-- ProfileUpload.tsx
+    |   |   +-- ResumeOptimization.tsx
     |   |   +-- Roadmap.tsx
     |   +-- App.tsx
     |   +-- index.css
@@ -84,6 +89,83 @@ SkillForge/
 - MongoDB connection string
 - Google Gemini API key
 - Optional: Firebase service account JSON for Firebase Admin features
+
+## Clone and Start Working
+
+Use these steps when setting up the project on a new machine.
+
+### 1. Clone the repository
+
+```powershell
+git clone <repository-url>
+cd SkillForge
+```
+
+Replace `<repository-url>` with the actual Git remote URL.
+
+### 2. Create backend environment variables
+
+Create `backend/.env`:
+
+```env
+PROJECT_NAME=SkillForge
+MONGODB_URL=mongodb://localhost:27017
+DATABASE_NAME=skillforge
+GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=
+FIREBASE_SERVICE_ACCOUNT_PATH=
+```
+
+If Firebase Admin features are needed, place the service account JSON somewhere local and set `FIREBASE_SERVICE_ACCOUNT_PATH` to that path. Keep `.env` files and service account JSON files private.
+
+### 3. Install backend dependencies
+
+```powershell
+cd backend
+python -m venv ..\.venv
+..\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+On macOS/Linux, activate the virtual environment with:
+
+```bash
+source ../.venv/bin/activate
+```
+
+### 4. Start the backend
+
+From `backend/` with the virtual environment active:
+
+```powershell
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Check the API docs at `http://localhost:8000/docs`.
+
+### 5. Install frontend dependencies
+
+Open a second terminal from the project root:
+
+```powershell
+cd frontend
+npm install
+```
+
+### 6. Start the frontend
+
+```powershell
+npm run dev
+```
+
+Open `http://localhost:5173`.
+
+### 7. Before making changes
+
+- Create a feature branch: `git checkout -b feature/your-change-name`
+- Keep secrets out of commits. The root `.gitignore` already excludes `.env`, `.venv`, `node_modules`, `dist`, and Firebase service account JSON files.
+- Run `npx vite build` from `frontend/` to verify the frontend bundle.
+- Run backend smoke checks by starting FastAPI and opening `http://localhost:8000/docs`.
 
 ## Backend Setup
 
@@ -224,7 +306,8 @@ npm run lint
 - Gemini responses are expected to be valid JSON. If the model returns malformed JSON, the current implementation may raise a parsing error.
 - Several API routes are placeholders and return simple success or empty-list responses.
 - The frontend profile upload currently simulates analysis and routes to the dashboard after a delay.
-- The dashboard and roadmap pages currently display sample data.
+- The dashboard, roadmap, opportunities, resume optimization, and interview prep pages currently display sample data.
+- `npm run build` runs `tsc && vite build`, but this project currently does not include a `tsconfig.json`. Until TypeScript config is added, use `npx vite build` for bundle verification.
 
 ## Security Notes
 
@@ -235,9 +318,9 @@ npm run lint
 
 ## Suggested Next Steps
 
-- Add a root `.gitignore` for `.venv`, `node_modules`, `.env`, and service account JSON files.
 - Connect the frontend profile upload flow to `/api/profile/upload` and `/api/agents/analyze`.
 - Add resilient JSON extraction and validation around Gemini responses.
 - Persist profiles and analysis results in MongoDB.
 - Replace placeholder auth routes with Firebase authentication verification.
 - Add backend tests for API contracts and agent response parsing.
+- Add a `tsconfig.json` so `npm run build` can run TypeScript checks before Vite builds.
