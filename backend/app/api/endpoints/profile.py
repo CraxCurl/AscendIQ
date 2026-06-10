@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from app.api.endpoints.auth import get_current_user
 from app.models.profile import UserProfile
 from app.services import storage
-from app.services.gemini_analysis import generate_analysis
+from app.services.gemini_analysis import generate_analysis, normalize_analysis
 
 router = APIRouter()
 
@@ -120,4 +120,5 @@ async def get_my_analysis(current_user: dict = Depends(get_current_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile analysis is required before opening the dashboard.",
         )
+    record["analysis"] = normalize_analysis(record.get("profile", {}), record.get("analysis", {}))
     return record
