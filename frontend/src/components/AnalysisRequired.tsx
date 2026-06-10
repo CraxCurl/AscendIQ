@@ -5,9 +5,9 @@ import { useAnalysis } from '../analysis';
 
 const AnalysisRequired = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const { record, loading } = useAnalysis();
+  const { record, loading, checked } = useAnalysis();
 
-  if (loading) {
+  if (loading || !checked) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-white">
         <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-5 text-indigo-100">
