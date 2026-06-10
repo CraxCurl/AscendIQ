@@ -12,6 +12,7 @@ import { AuthProvider } from './auth';
 import { AnalysisProvider } from './analysis';
 import AnalysisRequired from './components/AnalysisRequired';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AuthPage } from './components/auth/AuthPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<AuthPage initialMode="register" />} />
               <Route path="/upload" element={<ProtectedRoute><ProfileUpload /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><AnalysisRequired><Dashboard /></AnalysisRequired></ProtectedRoute>} />
               <Route path="/roadmap" element={<ProtectedRoute><AnalysisRequired><Roadmap /></AnalysisRequired></ProtectedRoute>} />

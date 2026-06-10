@@ -26,6 +26,10 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: Optional[str] = None
 
+    # Resend / email
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+
     # JWT
     JWT_SECRET_KEY: str = Field(
         default="change-this-secret-key",

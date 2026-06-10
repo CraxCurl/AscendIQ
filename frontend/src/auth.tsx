@@ -2,6 +2,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 
 type AuthUser = {
   email: string;
+  full_name?: string;
 };
 
 type AuthResult = {
@@ -11,6 +12,7 @@ type AuthResult = {
 
 type SignupResult = {
   message: string;
+  access_token: string;
   user: AuthUser;
 };
 
@@ -20,6 +22,10 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<string>;
+  register: (fullName: string, email: string, password: string) => Promise<void>;
+  sandboxLogin: () => Promise<void>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<boolean>;
   logout: () => void;
 };
 
@@ -34,11 +40,11 @@ const readStoredUser = () => {
   return storedUser ? (JSON.parse(storedUser) as AuthUser) : null;
 };
 
-const requestAuth = async <T,>(path: 'login' | 'signup', email: string, password: string) => {
+const requestAuth = async <T,>(path: 'login' | 'signup' | 'register' | 'sandbox-login' | 'send-otp' | 'verify-otp', body: Record<string, unknown> = {}) => {
   const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
@@ -66,11 +72,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       isAuthenticated: Boolean(token),
       login: async (email, password) => {
-        storeSession(await requestAuth<AuthResult>('login', email, password));
+        storeSession(await requestAuth<AuthResult>('login', { email, password }));
       },
       signup: async (email, password) => {
-        const result = await requestAuth<SignupResult>('signup', email, password);
+        const result = await requestAuth<SignupResult>('signup', { email, password });
+        storeSession({ access_token: result.access_token, user: result.user });
         return result.message;
+      },
+      register: async (fullName, email, password) => {
+        const result = await requestAuth<SignupResult>('register', { full_name: fullName, email, password });
+        storeSession({ access_token: result.access_token, user: result.user });
+      },
+      sandboxLogin: async () => {
+        const result = await requestAuth<AuthResult>('sandbox-login');
+        storeSession({ access_token: result.access_token, user: result.user });
+      },
+      sendOtp: async (email) => {
+        await requestAuth<{ message: string }>('send-otp', { email });
+      },
+      verifyOtp: async (email, code) => {
+        const result = await requestAuth<{ verified: boolean }>('verify-otp', { email, code });
+        return Boolean(result.verified);
       },
       logout: () => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);

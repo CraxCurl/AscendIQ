@@ -105,55 +105,56 @@ const ProfileUpload = () => {
   };
 
   return (
-    <div className="min-h-screen py-12 px-6 flex flex-col items-center">
-      <div className="max-w-3xl w-full">
+    <div className="min-h-screen py-12 px-6 flex flex-col items-center bg-black relative selection:bg-white/30 selection:text-white">
+      <div className="absolute top-0 left-1/4 w-1/2 h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="max-w-3xl w-full z-10 animate-fade-in">
         <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Complete Your Profile</h1>
-          <p className="text-slate-400 text-lg">Help AscendIQ understand your background to build your live career OS.</p>
+          <h1 className="text-4xl font-bold mb-4 text-white glow-text">Complete Your Profile</h1>
+          <p className="text-white/50 text-lg">Help AscendIQ understand your background to build your live career OS.</p>
         </header>
 
         {banner && (
-          <div className="mb-6 flex gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 text-sm text-indigo-100">
-            {loading ? <Loader2 className="mt-0.5 shrink-0 animate-spin" size={18} /> : <Sparkles className="mt-0.5 shrink-0" size={18} />}
+          <div className="mb-6 flex gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-white backdrop-blur-md">
+            {loading ? <Loader2 className="mt-0.5 shrink-0 animate-spin text-white" size={18} /> : <Sparkles className="mt-0.5 shrink-0 text-white" size={18} />}
             <p>{banner}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/50 border border-slate-800 p-8 rounded-3xl">
+        <form onSubmit={handleSubmit} className="space-y-8 glass-panel p-8">
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <label className="block">
-              <span className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+              <span className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                 <UserRound size={16} /> Full Name
               </span>
               <input
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
                 placeholder={user?.email?.split('@')[0] ?? 'Your name'}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-colors"
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+              <span className="text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                 <Sparkles size={16} /> Skills
               </span>
               <input
                 value={skills}
                 onChange={(event) => setSkills(event.target.value)}
                 placeholder="Python, React, SQL, Figma"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-colors"
               />
             </label>
           </section>
 
           {/* Target Role */}
           <section>
-            <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+            <label className="block text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
               <Briefcase size={16} /> Target Career Role
             </label>
             <select
               value={targetRole}
               onChange={(event) => setTargetRole(event.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition-colors appearance-none"
             >
               <option>AI Engineer</option>
               <option>Data Scientist</option>
@@ -166,7 +167,7 @@ const ProfileUpload = () => {
 
           {/* Resume Upload */}
           <section>
-            <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+            <label className="block text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
               <FileText size={16} /> Upload Resume (PDF/DOCX)
             </label>
             <input
@@ -196,26 +197,26 @@ const ProfileUpload = () => {
                 setIsDragging(false);
               }}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors cursor-pointer bg-slate-800/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors cursor-pointer focus:outline-none ${
                 isDragging
-                  ? 'border-indigo-400 bg-indigo-500/10'
+                  ? 'border-white bg-white/10'
                   : selectedFile
-                    ? 'border-emerald-500/70'
-                    : 'border-slate-700 hover:border-indigo-500'
+                    ? 'border-white/50 bg-white/5'
+                    : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
               }`}
             >
-              <Upload className={`mx-auto mb-4 ${selectedFile ? 'text-emerald-400' : 'text-slate-500'}`} size={32} />
-              <p className="text-slate-300">
+              <Upload className={`mx-auto mb-4 ${selectedFile ? 'text-white' : 'text-white/40'}`} size={32} />
+              <p className="text-white/80 font-medium">
                 {selectedFile ? selectedFile.name : 'Drag and drop or click to upload'}
               </p>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-white/40 mt-2">
                 {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)}MB selected` : 'Maximum file size: 5MB'}
               </p>
             </div>
           </section>
 
           <section>
-            <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+            <label className="block text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
               <MessageSquareText size={16} /> Describe Yourself
             </label>
             <textarea
@@ -223,15 +224,15 @@ const ProfileUpload = () => {
               onChange={(event) => setAboutYourself(event.target.value)}
               rows={7}
               placeholder="Tell AscendIQ about your background, projects, goals, strengths, doubts, preferred roles, or anything your resume misses."
-              className="w-full resize-none bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full resize-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-colors placeholder:text-white/20"
             />
-            <p className="mt-2 text-xs text-slate-500">Resume or this section is compulsory. Adding both produces better analytics.</p>
+            <p className="mt-2 text-xs text-white/40">Resume or this section is compulsory. Adding both produces better analytics.</p>
           </section>
 
           {/* Social Links */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section>
-              <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+              <label className="block text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                 <Github size={16} /> GitHub Profile
               </label>
               <input
@@ -239,11 +240,11 @@ const ProfileUpload = () => {
                 value={githubUrl}
                 onChange={(event) => setGithubUrl(event.target.value)}
                 placeholder="https://github.com/yourusername"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-colors placeholder:text-white/20"
               />
             </section>
             <section>
-              <label className="block text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+              <label className="block text-sm font-medium text-white/60 mb-3 flex items-center gap-2">
                 <Linkedin size={16} /> LinkedIn Profile
               </label>
               <input
@@ -251,7 +252,7 @@ const ProfileUpload = () => {
                 value={linkedinUrl}
                 onChange={(event) => setLinkedinUrl(event.target.value)}
                 placeholder="https://linkedin.com/in/yourusername"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-colors placeholder:text-white/20"
               />
             </section>
           </div>
@@ -259,7 +260,7 @@ const ProfileUpload = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center gap-2"
+            className="w-full bg-white text-black py-4 rounded-full text-lg font-bold transition-all flex items-center justify-center gap-2 hover:bg-white/90 disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -273,8 +274,8 @@ const ProfileUpload = () => {
           </button>
 
           {uploadError && (
-            <div className="flex gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              <AlertCircle className="mt-0.5 shrink-0" size={16} />
+            <div className="flex gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 backdrop-blur-sm">
+              <AlertCircle className="mt-0.5 shrink-0 text-red-400" size={16} />
               <p>{uploadError}</p>
             </div>
           )}

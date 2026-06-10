@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Optional
@@ -11,7 +11,7 @@ _lock = Lock()
 
 
 def _empty_store() -> Dict[str, Any]:
-    return {"users": {}, "analyses": {}}
+    return {"users": {}, "analyses": {}, "otps": {}}
 
 
 def _load() -> Dict[str, Any]:
@@ -26,6 +26,7 @@ def _load() -> Dict[str, Any]:
 
     data.setdefault("users", {})
     data.setdefault("analyses", {})
+    data.setdefault("otps", {})
     return data
 
 
@@ -40,7 +41,7 @@ def get_user(email: str) -> Optional[dict]:
         return deepcopy(_load()["users"].get(email.lower()))
 
 
-def create_user(email: str, hashed_password: str) -> dict:
+def create_user(email: str, hashed_password: str, full_name: str = None) -> dict:
     normalized_email = email.lower()
     with _lock:
         data = _load()
@@ -49,6 +50,7 @@ def create_user(email: str, hashed_password: str) -> dict:
 
         user = {
             "email": normalized_email,
+            "full_name": full_name,
             "hashed_password": hashed_password,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -75,3 +77,43 @@ def save_analysis(email: str, profile: dict, analysis: dict) -> dict:
 def get_analysis(email: str) -> Optional[dict]:
     with _lock:
         return deepcopy(_load()["analyses"].get(email.lower()))
+
+
+def store_otp(email: str, code: str) -> None:
+    normalized_email = email.lower()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    with _lock:
+        data = _load()
+        data["otps"][normalized_email] = {
+            "code": code,
+            "expires_at": expires_at.isoformat()
+        }
+        _save(data)
+
+
+def get_otp(email: str) -> Optional[dict]:
+    normalized_email = email.lower()
+    with _lock:
+        data = _load()
+        otp_record = data["otps"].get(normalized_email)
+        
+        if not otp_record:
+            return None
+            
+        expires_at = datetime.fromisoformat(otp_record["expires_at"])
+        if datetime.now(timezone.utc) > expires_at:
+            del data["otps"][normalized_email]
+            _save(data)
+            return None
+            
+        return deepcopy(otp_record)
+
+
+def delete_otp(email: str) -> None:
+    normalized_email = email.lower()
+    with _lock:
+        data = _load()
+        if normalized_email in data["otps"]:
+            del data["otps"][normalized_email]
+            _save(data)

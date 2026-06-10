@@ -21,11 +21,11 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <aside className="w-64 shrink-0 border-r border-slate-800 p-6 flex flex-col gap-8">
+    <div className="flex min-h-screen bg-black text-white selection:bg-white/30 selection:text-white">
+      <aside className="w-64 shrink-0 border-r border-white/10 p-6 flex flex-col gap-8 bg-black">
         <NavLink
           to="/"
-          className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+          className="text-2xl font-bold tracking-tight text-white glow-text"
         >
           AscendIQ
         </NavLink>
@@ -37,8 +37,8 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                    ? 'bg-white/10 text-white border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -48,12 +48,12 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
           ))}
         </nav>
 
-        <div className="mt-auto border-t border-slate-800 pt-5">
-          <p className="mb-3 truncate text-xs text-slate-500">{user?.email}</p>
+        <div className="mt-auto border-t border-white/10 pt-5">
+          <p className="mb-3 truncate text-xs text-white/40">{user?.email}</p>
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-slate-400 transition-all hover:bg-slate-800 hover:text-slate-100"
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-white/60 transition-all hover:bg-white/5 hover:text-white"
           >
             <LogOut size={20} />
             <span className="font-medium">Logout</span>
@@ -61,7 +61,11 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+      <main className="flex-1 p-8 overflow-auto relative">
+        {/* Subtle background glow */}
+        <div className="absolute top-0 left-1/4 w-1/2 h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+        {children}
+      </main>
     </div>
   );
 };
