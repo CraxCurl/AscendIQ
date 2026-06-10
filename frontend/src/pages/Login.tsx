@@ -14,7 +14,7 @@ const Login = () => {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/upload';
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard';
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
