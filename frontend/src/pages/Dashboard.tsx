@@ -125,6 +125,45 @@ const updatedAt = record.updated_at
           <Signal icon={<AlertCircle size={18} />} label="Risk" value={analysis.signals?.risk || "N/A"} />
         </Panel>
       </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <Panel title="AI Agent Pipeline">
+          <div className="space-y-4">
+            {(analysis.agent_reports || []).map((agent) => (
+              <div key={agent.agent_name} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-white">{agent.agent_name}</p>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">{agent.summary || 'Specialist analysis completed.'}</p>
+              </div>
+            ))}
+            {analysis.master_summary && (
+              <div className="rounded-xl border border-white/15 bg-white/10 p-4">
+                <p className="text-xs uppercase tracking-wider text-white/40 font-semibold">Master Career Synthesis Agent</p>
+                <p className="mt-2 text-sm text-white/70 leading-relaxed">{analysis.master_summary}</p>
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="LeetCode Practice Plan">
+          <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-4">
+            <p className="text-xs uppercase tracking-wider text-white/40 font-semibold">Dataset Coverage</p>
+            <p className="mt-1 text-2xl font-bold text-white">{analysis.leetcode_plan?.dataset_size || analysis.agent_pipeline?.leetcode_dataset_size || 0} problems</p>
+          </div>
+          <div className="space-y-3">
+            {(analysis.leetcode_plan?.weekly_plan || []).slice(0, 4).map((week) => (
+              <div key={`${week.week}-${week.topic}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-white">Week {week.week}: {week.topic}</p>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-white/60">
+                    {week.problems?.length || 0} picks
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">{week.goal}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
     </AppShell>
   );
 };

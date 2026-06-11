@@ -14,9 +14,18 @@ class Settings(BaseSettings):
 
     # Firebase (optional)
     FIREBASE_SERVICE_ACCOUNT_PATH: Optional[str] = None
+    FIREBASE_PROJECT_ID: str = "ascendiq"
 
     # AI
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
+    PROFILE_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("PROFILE_AGENT_API_KEY", "AI_AGENT_1_API_KEY", "API_KEY_1"))
+    SKILL_ROADMAP_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("SKILL_ROADMAP_AGENT_API_KEY", "AI_AGENT_2_API_KEY", "API_KEY_2"))
+    RESUME_ATS_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("RESUME_ATS_AGENT_API_KEY", "AI_AGENT_3_API_KEY", "API_KEY_3"))
+    OPPORTUNITY_INTERVIEW_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("OPPORTUNITY_INTERVIEW_AGENT_API_KEY", "AI_AGENT_4_API_KEY", "API_KEY_4"))
+    LEETCODE_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("LEETCODE_AGENT_API_KEY", "AI_AGENT_5_API_KEY", "API_KEY_5"))
+    MASTER_AGENT_API_KEY: Optional[str] = Field(default=None, validation_alias=AliasChoices("MASTER_AGENT_API_KEY", "AI_MASTER_API_KEY", "API_KEY_6"))
 
     GROQ_API_KEY: Optional[str] = Field(
         default=None,
@@ -48,7 +57,7 @@ class Settings(BaseSettings):
 
     # Environment
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

@@ -45,6 +45,25 @@ export type Analysis = {
     story_bank: number;
     questions: Array<{ type: string; prompt: string }>;
   };
+  leetcode_plan?: {
+    dataset_size?: number;
+    difficulty_mix?: Record<string, number>;
+    starter_problems?: Array<{ id?: number; name: string; difficulty?: string; best_languages?: string }>;
+    weekly_plan?: Array<{ week: number; topic: string; goal: string; problems?: Array<{ id?: number; name: string; difficulty?: string }> }>;
+    practice_rules?: string[];
+  };
+  agent_reports?: Array<{
+    agent_name: string;
+    summary?: string;
+    findings?: string[];
+    recommendations?: string[];
+  }>;
+  agent_pipeline?: {
+    specialists: string[];
+    master: string;
+    leetcode_dataset_size?: number;
+  };
+  master_summary?: string;
 };
 
 export type AnalysisRecord = {

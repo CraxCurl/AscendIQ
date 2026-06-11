@@ -1,119 +1,247 @@
-import json
 from copy import deepcopy
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from threading import Lock
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+from typing import Optional
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "storage"
-DATA_FILE = DATA_DIR / "ascendiq_data.json"
-_lock = Lock()
+from pymongo import ASCENDING, MongoClient, ReturnDocument
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
+from app.core.config import settings
 
-def _empty_store() -> Dict[str, Any]:
-    return {"users": {}, "analyses": {}, "otps": {}}
+_client: MongoClient | None = None
 
 
-def _load() -> Dict[str, Any]:
-    if not DATA_FILE.exists():
-        return _empty_store()
-
-    try:
-        with DATA_FILE.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-    except (json.JSONDecodeError, OSError):
-        return _empty_store()
-
-    data.setdefault("users", {})
-    data.setdefault("analyses", {})
-    data.setdefault("otps", {})
-    return data
+def get_client() -> MongoClient:
+    global _client
+    if _client is None:
+        _client = MongoClient(settings.MONGODB_URL, serverSelectionTimeoutMS=5000)
+    return _client
 
 
-def _save(data: Dict[str, Any]) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with DATA_FILE.open("w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+def get_users_collection():
+    return get_client()[settings.DATABASE_NAME]["users"]
+
+
+def get_analyses_collection():
+    return get_client()[settings.DATABASE_NAME]["analyses"]
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _clean(document: Optional[dict]) -> Optional[dict]:
+    if not document:
+        return None
+    cleaned = deepcopy(document)
+    cleaned.pop("_id", None)
+    return cleaned
+
+
+def _hash_otp(email: str, code: str) -> str:
+    return sha256(f"{email.lower()}:{code}:{settings.JWT_SECRET_KEY}".encode("utf-8")).hexdigest()
+
+
+def init_db() -> None:
+    users = get_users_collection()
+    analyses = get_analyses_collection()
+    users.create_index([("email", ASCENDING)], unique=True)
+    analyses.create_index([("email", ASCENDING)], unique=True)
+
+
+def ping() -> None:
+    get_client().admin.command("ping")
 
 
 def get_user(email: str) -> Optional[dict]:
-    with _lock:
-        return deepcopy(_load()["users"].get(email.lower()))
+    users = get_users_collection()
+    return _clean(users.find_one({"email": email.lower()}))
 
 
-def create_user(email: str, hashed_password: str, full_name: str = None) -> dict:
+def create_user(email: str, hashed_password: str, full_name: Optional[str] = None, is_verified: bool = False) -> dict:
+    users = get_users_collection()
     normalized_email = email.lower()
-    with _lock:
-        data = _load()
-        if normalized_email in data["users"]:
-            raise ValueError("exists")
-
-        user = {
-            "email": normalized_email,
-            "full_name": full_name,
-            "hashed_password": hashed_password,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        data["users"][normalized_email] = user
-        _save(data)
-        return deepcopy(user)
-
-
-def save_analysis(email: str, profile: dict, analysis: dict) -> dict:
-    normalized_email = email.lower()
-    record = {
-        "profile": profile,
-        "analysis": analysis,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+    now = _utcnow()
+    user = {
+        "email": normalized_email,
+        "full_name": full_name,
+        "hashed_password": hashed_password,
+        "auth_provider": "password",
+        "providers": ["password"],
+        "firebase_uid": None,
+        "photo_url": None,
+        "is_verified": is_verified,
+        "created_at": now,
+        "updated_at": now,
+        "last_login_at": None,
+        "verification": None,
     }
 
-    with _lock:
-        data = _load()
-        data["analyses"][normalized_email] = record
-        _save(data)
-        return deepcopy(record)
+    try:
+        users.insert_one(user)
+    except DuplicateKeyError as exc:
+        raise ValueError("exists") from exc
+    except PyMongoError:
+        raise
+
+    return _clean(user)
 
 
-def get_analysis(email: str) -> Optional[dict]:
-    with _lock:
-        return deepcopy(_load()["analyses"].get(email.lower()))
+def replace_unverified_user(email: str, hashed_password: str, full_name: str) -> dict:
+    users = get_users_collection()
+    normalized_email = email.lower()
+    now = _utcnow()
+    result = users.find_one_and_update(
+        {"email": normalized_email, "is_verified": {"$ne": True}},
+        {
+            "$set": {
+                "full_name": full_name,
+                "hashed_password": hashed_password,
+                "auth_provider": "password",
+                "providers": ["password"],
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "email": normalized_email,
+                "is_verified": False,
+                "created_at": now,
+                "last_login_at": None,
+                "verification": None,
+                "firebase_uid": None,
+                "photo_url": None,
+            },
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    return _clean(result)
+
+
+def upsert_firebase_user(email: str, firebase_uid: str, full_name: Optional[str], photo_url: Optional[str] = None) -> dict:
+    users = get_users_collection()
+    normalized_email = email.lower()
+    now = _utcnow()
+    result = users.find_one_and_update(
+        {"email": normalized_email},
+        {
+            "$set": {
+                "email": normalized_email,
+                "firebase_uid": firebase_uid,
+                "full_name": full_name,
+                "photo_url": photo_url,
+                "is_verified": True,
+                "email_verified_at": now,
+                "last_login_at": now,
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "hashed_password": None,
+                "auth_provider": "google",
+                "created_at": now,
+            },
+            "$addToSet": {"providers": "google"},
+            "$unset": {"verification": ""},
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+    return _clean(result)
+
+
+def mark_login(email: str) -> None:
+    users = get_users_collection()
+    users.update_one(
+        {"email": email.lower()},
+        {"$set": {"last_login_at": _utcnow(), "updated_at": _utcnow()}},
+    )
 
 
 def store_otp(email: str, code: str) -> None:
+    users = get_users_collection()
     normalized_email = email.lower()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
-    
-    with _lock:
-        data = _load()
-        data["otps"][normalized_email] = {
-            "code": code,
-            "expires_at": expires_at.isoformat()
-        }
-        _save(data)
+    users.update_one(
+        {"email": normalized_email},
+        {
+            "$set": {
+                "verification": {
+                    "code_hash": _hash_otp(normalized_email, code),
+                    "expires_at": _utcnow() + timedelta(minutes=10),
+                    "sent_at": _utcnow(),
+                    "attempts": 0,
+                },
+                "updated_at": _utcnow(),
+            }
+        },
+    )
 
 
-def get_otp(email: str) -> Optional[dict]:
+def verify_otp(email: str, code: str) -> bool:
+    users = get_users_collection()
     normalized_email = email.lower()
-    with _lock:
-        data = _load()
-        otp_record = data["otps"].get(normalized_email)
-        
-        if not otp_record:
-            return None
-            
-        expires_at = datetime.fromisoformat(otp_record["expires_at"])
-        if datetime.now(timezone.utc) > expires_at:
-            del data["otps"][normalized_email]
-            _save(data)
-            return None
-            
-        return deepcopy(otp_record)
+    user = users.find_one({"email": normalized_email})
+    verification = (user or {}).get("verification")
+    if not verification:
+        return False
+
+    expires_at = verification.get("expires_at")
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if not expires_at or _utcnow() > expires_at:
+        delete_otp(normalized_email)
+        return False
+
+    if verification.get("attempts", 0) >= 5:
+        delete_otp(normalized_email)
+        return False
+
+    if verification.get("code_hash") != _hash_otp(normalized_email, code):
+        users.update_one(
+            {"email": normalized_email},
+            {"$inc": {"verification.attempts": 1}, "$set": {"updated_at": _utcnow()}},
+        )
+        return False
+
+    users.update_one(
+        {"email": normalized_email},
+        {
+            "$set": {
+                "is_verified": True,
+                "email_verified_at": _utcnow(),
+                "updated_at": _utcnow(),
+            },
+            "$unset": {"verification": ""},
+        },
+    )
+    return True
 
 
 def delete_otp(email: str) -> None:
+    users = get_users_collection()
+    users.update_one(
+        {"email": email.lower()},
+        {"$unset": {"verification": ""}, "$set": {"updated_at": _utcnow()}},
+    )
+
+
+def save_analysis(email: str, profile: dict, analysis: dict) -> dict:
+    analyses = get_analyses_collection()
     normalized_email = email.lower()
-    with _lock:
-        data = _load()
-        if normalized_email in data["otps"]:
-            del data["otps"][normalized_email]
-            _save(data)
+    now = _utcnow()
+    record = {
+        "email": normalized_email,
+        "profile": profile,
+        "analysis": analysis,
+        "updated_at": now,
+    }
+    analyses.update_one(
+        {"email": normalized_email},
+        {"$set": record, "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+    return _clean(record)
+
+
+def get_analysis(email: str) -> Optional[dict]:
+    analyses = get_analyses_collection()
+    return _clean(analyses.find_one({"email": email.lower()}))

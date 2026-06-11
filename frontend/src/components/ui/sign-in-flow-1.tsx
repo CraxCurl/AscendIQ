@@ -28,12 +28,14 @@ interface SignInPageProps {
   mode?: "login" | "register";
   onToggleMode?: () => void;
   onLoginSubmit?: (email: string, password: string) => Promise<void>;
-  onRegisterSubmit?: (fullName: string, email: string, password: string) => Promise<void>;
+  onRegisterSubmit?: (fullName: string, email: string, password: string) => Promise<string>;
   onSendOtp?: (email: string) => Promise<void>;
   onVerifyOtp?: (email: string, code: string) => Promise<boolean>;
   onSandboxLogin?: () => Promise<void>;
+  onGoogleLogin?: () => Promise<void>;
   onSuccess?: () => void;
   error?: string | null;
+  notice?: string | null;
   clearError?: () => void;
   isDev?: boolean;
 }
@@ -451,8 +453,10 @@ export const SignInPage = ({
   onSendOtp,
   onVerifyOtp,
   onSandboxLogin,
+  onGoogleLogin,
   onSuccess,
   error,
+  notice,
   clearError,
   isDev = false,
 }: SignInPageProps) => {
@@ -503,8 +507,21 @@ export const SignInPage = ({
     setLoading(true);
 
     try {
-      if (onSendOtp) {
-        await onSendOtp(email);
+      if (mode === "login") {
+        if (onLoginSubmit) {
+          await onLoginSubmit(email, password);
+        }
+        setReverseCanvasVisible(true);
+        setTimeout(() => setInitialCanvasVisible(false), 50);
+        setTimeout(() => {
+          setStep("success");
+          setLoading(false);
+        }, 1500);
+        return;
+      }
+
+      if (onRegisterSubmit) {
+        await onRegisterSubmit(fullName, email, password);
       }
       setResendCooldown(60);
       setStep("code");
@@ -555,13 +572,6 @@ export const SignInPage = ({
               setCode(["", "", "", "", "", ""]);
               codeInputRefs.current[0]?.focus();
               return;
-            }
-
-            // OTP verified — complete auth
-            if (mode === "register" && onRegisterSubmit) {
-              await onRegisterSubmit(fullName, email, password);
-            } else if (mode === "login" && onLoginSubmit) {
-              await onLoginSubmit(email, password);
             }
 
             // Trigger success animation
@@ -631,6 +641,25 @@ export const SignInPage = ({
     }
   };
 
+  const handleGoogleLogin = async () => {
+    if (!onGoogleLogin) return;
+    setLoading(true);
+    setLocalError(null);
+    clearError?.();
+    try {
+      await onGoogleLogin();
+      setReverseCanvasVisible(true);
+      setTimeout(() => setInitialCanvasVisible(false), 50);
+      setTimeout(() => {
+        setStep("success");
+        setLoading(false);
+      }, 1500);
+    } catch (err: any) {
+      setLocalError(err?.message || "Google sign-in failed");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={cn("flex w-[100%] flex-col min-h-screen bg-black relative", className)}>
       <div className="absolute inset-0 z-0">
@@ -680,6 +709,16 @@ export const SignInPage = ({
                 </motion.div>
               )}
 
+              {notice && step === "credentials" && !displayError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm text-center"
+                >
+                  {notice}
+                </motion.div>
+              )}
+
               <AnimatePresence mode="wait">
                 {step === "credentials" ? (
                   <motion.div
@@ -700,7 +739,12 @@ export const SignInPage = ({
                     </div>
 
                     <div className="space-y-4">
-                      <button className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors">
+                      <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={loading || !onGoogleLogin}
+                        className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors disabled:opacity-50"
+                      >
                         <span className="text-lg">G</span>
                         <span>Sign in with Google</span>
                       </button>
@@ -905,8 +949,12 @@ export const SignInPage = ({
                     className="space-y-6 text-center"
                   >
                     <div className="space-y-1">
-                      <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">You're in!</h1>
-                      <p className="text-[1.25rem] text-white/50 font-light">Welcome to AscendIQ</p>
+                      <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">
+                        {mode === "register" ? "Email verified!" : "You're in!"}
+                      </h1>
+                      <p className="text-[1.25rem] text-white/50 font-light">
+                        {mode === "register" ? "Log in to continue to AscendIQ" : "Welcome to AscendIQ"}
+                      </p>
                     </div>
 
                     <motion.div
@@ -929,7 +977,7 @@ export const SignInPage = ({
                       onClick={onSuccess}
                       className="w-full rounded-full bg-white text-black font-medium py-3 hover:bg-white/90 transition-colors"
                     >
-                      Continue to Dashboard
+                      {mode === "register" ? "Go to Login" : "Continue to Dashboard"}
                     </motion.button>
                   </motion.div>
                 )}

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.core.config import settings
+from app.services.firebase_auth import verify_firebase_id_token
 from app.services import storage
 from app.services import otp_service
 
@@ -29,7 +30,6 @@ class AuthResponse(BaseModel):
 
 class SignupResponse(BaseModel):
     message: str
-    access_token: str
     user: dict
 
 class OtpRequest(BaseModel):
@@ -38,6 +38,9 @@ class OtpRequest(BaseModel):
 class OtpVerifyRequest(BaseModel):
     email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     code: str = Field(..., min_length=6, max_length=6)
+
+class FirebaseLoginRequest(BaseModel):
+    id_token: str = Field(..., min_length=20)
 
 class TokenPayload(BaseModel):
     sub: str
@@ -55,7 +58,13 @@ def create_access_token(email: str) -> str:
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 def public_user(user: dict) -> dict:
-    return {"email": user["email"], "full_name": user.get("full_name")}
+    return {
+        "email": user["email"],
+        "full_name": user.get("full_name"),
+        "auth_provider": user.get("auth_provider"),
+        "providers": user.get("providers", []),
+        "photo_url": user.get("photo_url"),
+    }
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     try:
@@ -87,61 +96,101 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 @router.post("/login")
 async def login(credentials: AuthRequest):
     user = storage.get_user(credentials.email.lower())
-    if not user or not verify_password(credentials.password, user["hashed_password"]):
+    hashed_password = (user or {}).get("hashed_password")
+    if not user or not hashed_password or not verify_password(credentials.password, hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    if not user.get("is_verified"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in.",
+        )
+    storage.mark_login(user["email"])
+    return AuthResponse(access_token=create_access_token(user["email"]), user=public_user(user))
+
+@router.post("/firebase-login")
+async def firebase_login(payload: FirebaseLoginRequest):
+    try:
+        claims = verify_firebase_id_token(payload.id_token)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Firebase login token") from exc
+
+    email = (claims.get("email") or "").lower()
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Firebase account does not include an email address")
+
+    user = storage.upsert_firebase_user(
+        email=email,
+        firebase_uid=claims["sub"],
+        full_name=claims.get("name") or email.split("@")[0],
+        photo_url=claims.get("picture"),
+    )
     return AuthResponse(access_token=create_access_token(user["email"]), user=public_user(user))
 
 @router.post("/signup")
 async def signup(credentials: AuthRequest):
-    email = credentials.email.lower()
-    if storage.get_user(email):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists")
-    user = storage.create_user(email, hash_password(credentials.password))
-    token = create_access_token(user["email"])
-    return SignupResponse(message="Account created successfully.", access_token=token, user=public_user(user))
+    return await register(
+        RegisterRequest(
+            full_name=credentials.email.split("@")[0],
+            email=credentials.email,
+            password=credentials.password,
+        )
+    )
 
 @router.post("/register")
 async def register(credentials: RegisterRequest):
     email = credentials.email.lower()
-    if storage.get_user(email):
+    existing_user = storage.get_user(email)
+    if existing_user and existing_user.get("is_verified"):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists")
-    user = storage.create_user(email, hash_password(credentials.password), credentials.full_name)
-    token = create_access_token(user["email"])
-    return SignupResponse(message="Account created successfully.", access_token=token, user=public_user(user))
+
+    user = storage.replace_unverified_user(email, hash_password(credentials.password), credentials.full_name)
+    code = otp_service.generate_code()
+    storage.store_otp(email, code)
+    try:
+        otp_service.send_otp_email(email, code, credentials.full_name)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return SignupResponse(
+        message="We sent a one-time verification code to your email.",
+        user=public_user(user),
+    )
 
 @router.post("/sandbox-login")
 async def sandbox_login():
     demo_email = "sandbox@ascendiq.dev"
     user = storage.get_user(demo_email)
     if not user:
-        user = storage.create_user(demo_email, hash_password("sandbox123"), "Demo User")
+        user = storage.create_user(demo_email, hash_password("sandbox123"), "Demo User", is_verified=True)
     token = create_access_token(user["email"])
     return AuthResponse(access_token=token, user=public_user(user))
 
 @router.post("/send-otp")
 async def send_otp(payload: OtpRequest):
     email = payload.email.lower()
+    user = storage.get_user(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Create an account before requesting a verification code.")
+    if user.get("is_verified"):
+        raise HTTPException(status_code=400, detail="This account is already verified. Please log in with your password.")
+
     code = otp_service.generate_code()
+    storage.store_otp(email, code)
     try:
-        otp_service.send_otp_email(email, code)
+        otp_service.send_otp_email(email, code, user.get("full_name"))
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    otp_service.store_otp(email, code)
     return {"message": "OTP sent", "email": email}
 
 @router.post("/verify-otp")
 async def verify_otp(payload: OtpVerifyRequest):
     email = payload.email.lower()
-    record = otp_service.get_otp(email)
-    if not record:
-        raise HTTPException(status_code=400, detail="OTP expired or not found")
-    if record["code"] != payload.code:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-    otp_service.delete_otp(email)
-    return {"message": "OTP verified", "verified": True}
+    if not storage.verify_otp(email, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    return {"message": "Email verified. Please log in to continue.", "verified": True}
 
 @router.get("/me")
 async def me(current_user: dict = Depends(get_current_user)):
