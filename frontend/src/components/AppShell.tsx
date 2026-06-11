@@ -23,8 +23,18 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-white selection:bg-white/30 selection:text-white">
-      <aside className="w-64 shrink-0 border-r border-white/10 p-6 flex flex-col gap-6 bg-black">
+    <div className="flex flex-col md:flex-row min-h-screen bg-black text-white selection:bg-white/30 selection:text-white">
+      {/* Mobile Top Bar */}
+      <div className="md:hidden flex items-center justify-between border-b border-white/10 p-4 bg-black sticky top-0 z-40">
+        <NavLink to="/" className="text-xl font-bold tracking-tight text-white glow-text">AscendIQ</NavLink>
+        <button onClick={handleLogout} className="text-white/60 hover:text-white flex items-center gap-2 text-sm">
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden w-64 shrink-0 border-r border-white/10 p-6 md:flex flex-col gap-6 bg-black sticky top-0 h-screen">
         <NavLink
           to="/"
           className="text-2xl font-bold tracking-tight text-white glow-text"
@@ -57,11 +67,34 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto relative">
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-8 overflow-auto relative pb-24 md:pb-8">
         {/* Subtle background glow */}
         <div className="absolute top-0 left-1/4 w-1/2 h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none -z-10" />
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/10 bg-black/90 backdrop-blur-md z-50 p-2 pb-safe">
+        <div className="flex justify-around items-center">
+          {navItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.to);
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.to}
+                onClick={() => navigate(item.to)}
+                className={`flex flex-col items-center gap-1 p-2 transition-colors ${
+                  isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <Icon size={20} className={isActive ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : ''} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
