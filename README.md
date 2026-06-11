@@ -204,9 +204,10 @@ For local development, make sure `localhost` is added as an authorized domain in
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements.txt !!or!!  python -m pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
+aaa
 
 API docs:
 
