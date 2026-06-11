@@ -20,6 +20,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
 
   const handleSuccess = () => {
     if (mode === 'register' || mode === 'forgot') {
+      setMode('login');
       navigate('/login', {
         replace: true,
         state: { notice: mode === 'forgot' ? 'Password updated. Please log in.' : 'Email verified. Please log in with your password.' },
@@ -36,6 +37,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
 
   return (
     <SignInPage
+      key={location.key}
       mode={mode}
       onToggleMode={handleToggleMode}
       onLoginSubmit={login}
