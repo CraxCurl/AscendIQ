@@ -1,0 +1,28 @@
+Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.\nTraceback (most recent call last):
+  File "C:\Users\vinay\Desktop\ascendiq\AscendIQ\backend\app\api\endpoints\auth.py", line 122, in firebase_login
+    claims = verify_firebase_id_token(payload.id_token)
+  File "C:\Users\vinay\Desktop\ascendiq\AscendIQ\backend\app\services\firebase_auth.py", line 23, in verify_firebase_id_token
+    return auth.verify_id_token(id_token)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\auth.py", line 224, in verify_id_token
+    client = _get_client(app)
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\auth.py", line 175, in _get_client
+    return _utils.get_app_service(app, _AUTH_ATTRIBUTE, Client)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\_utils.py", line 98, in get_app_service
+    return app._get_service(name, initializer) # pylint: disable=protected-access
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\__init__.py", line 297, in _get_service
+    self._services[name] = initializer(self)
+                           ~~~~~~~~~~~^^^^^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\_auth_client.py", line 58, in __init__
+    credential = app.credential.get_credential()
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\credentials.py", line 142, in get_credential
+    self._load_credential()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\firebase_admin\credentials.py", line 159, in _load_credential
+    self._g_credential, self._project_id = google.auth.default(scopes=_scopes)
+                                           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\vinay\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\google\auth\_default.py", line 748, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.

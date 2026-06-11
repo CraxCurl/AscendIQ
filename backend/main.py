@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, profile, agents, roadmap, opportunities
+from app.api.endpoints import auth, profile, agents, roadmap, opportunities, interview
 from app.core.config import settings
 from app.services import storage
 
@@ -9,7 +9,7 @@ app = FastAPI(title="AscendIQ API", version="1.0.0")
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust in production
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,6 +21,7 @@ app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
 app.include_router(agents.router, prefix="/api/agents", tags=["AI Agents"])
 app.include_router(roadmap.router, prefix="/api/roadmap", tags=["Roadmap"])
 app.include_router(opportunities.router, prefix="/api/opportunities", tags=["Opportunities"])
+app.include_router(interview.router, prefix="/api/interview", tags=["Interview Prep"])
 
 @app.on_event("startup")
 async def startup_event():

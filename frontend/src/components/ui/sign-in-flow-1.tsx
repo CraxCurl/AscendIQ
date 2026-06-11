@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { AboutModal } from "./AboutModal";
 
 type Uniforms = {
   [key: string]: {
@@ -25,15 +26,18 @@ interface ShaderProps {
 
 interface SignInPageProps {
   className?: string;
-  mode?: "login" | "register";
+  mode?: "login" | "register" | "forgot";
   onToggleMode?: () => void;
   onLoginSubmit?: (email: string, password: string) => Promise<void>;
   onRegisterSubmit?: (fullName: string, email: string, password: string) => Promise<string>;
   onSendOtp?: (email: string) => Promise<void>;
   onVerifyOtp?: (email: string, code: string) => Promise<boolean>;
+  onForgotPassword?: (email: string) => Promise<string>;
+  onResetPassword?: (email: string, code: string, newPassword: string) => Promise<string>;
   onSandboxLogin?: () => Promise<void>;
   onGoogleLogin?: () => Promise<void>;
   onSuccess?: () => void;
+  onForgotMode?: () => void;
   error?: string | null;
   notice?: string | null;
   clearError?: () => void;
@@ -318,13 +322,13 @@ const Shader: React.FC<ShaderProps> = ({ source, uniforms, maxFps = 60 }) => {
   );
 };
 
-const AnimatedNavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
+const AnimatedNavLink = ({ href, onClick, children }: { href: string; onClick?: (e: React.MouseEvent) => void; children: React.ReactNode }) => {
   const defaultTextColor = 'text-gray-300';
   const hoverTextColor = 'text-white';
   const textSizeClass = 'text-sm';
 
   return (
-    <a href={href} className={`group relative inline-flex overflow-hidden h-5 ${textSizeClass}`}>
+    <a href={href} onClick={onClick} className={`group relative inline-flex overflow-hidden h-5 ${textSizeClass}`}>
       <div className="flex flex-col transition-transform duration-300 ease-out transform group-hover:-translate-y-1/2">
         <span className={`h-5 flex items-center ${defaultTextColor}`}>{children}</span>
         <span className={`h-5 flex items-center ${hoverTextColor}`}>{children}</span>
@@ -333,10 +337,17 @@ const AnimatedNavLink = ({ href, children }: { href: string; children: React.Rea
   );
 };
 
-export function MiniNavbar() {
+export function MiniNavbar({ onAboutClick }: { onAboutClick?: () => void } = {}) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [headerShapeClass, setHeaderShapeClass] = useState('rounded-full');
   const shapeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleAboutClick = () => {
+    if (onAboutClick) onAboutClick();
+    setShowAbout(true);
+    setIsOpen(false);
+  };
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -372,7 +383,7 @@ export function MiniNavbar() {
   const navLinksData = [
     { label: 'Home', href: '/' },
     { label: 'Features', href: '/#how-it-works' },
-    { label: 'About', href: '/#about' },
+    { label: 'About', href: '#', onClick: handleAboutClick },
   ];
 
   const loginButtonElement = (
@@ -406,7 +417,11 @@ export function MiniNavbar() {
 
         <nav className="hidden sm:flex items-center space-x-4 sm:space-x-6 text-sm">
           {navLinksData.map((link) => (
-            <AnimatedNavLink key={link.href} href={link.href}>
+            <AnimatedNavLink 
+              key={link.label} 
+              href={link.href}
+              onClick={link.onClick ? (e) => { e.preventDefault(); link.onClick(); } : undefined}
+            >
               {link.label}
             </AnimatedNavLink>
           ))}
@@ -430,7 +445,12 @@ export function MiniNavbar() {
                        ${isOpen ? 'max-h-[1000px] opacity-100 pt-4' : 'max-h-0 opacity-0 pt-0 pointer-events-none'}`}>
         <nav className="flex flex-col items-center space-y-4 text-base w-full">
           {navLinksData.map((link) => (
-            <a key={link.href} href={link.href} className="text-gray-300 hover:text-white transition-colors w-full text-center">
+            <a 
+              key={link.label} 
+              href={link.href} 
+              onClick={link.onClick ? (e) => { e.preventDefault(); link.onClick(); setIsOpen(false); } : undefined}
+              className="text-gray-300 hover:text-white transition-colors w-full text-center"
+            >
               {link.label}
             </a>
           ))}
@@ -440,6 +460,8 @@ export function MiniNavbar() {
           {signupButtonElement}
         </div>
       </div>
+
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
     </header>
   );
 }
@@ -452,9 +474,12 @@ export const SignInPage = ({
   onRegisterSubmit,
   onSendOtp,
   onVerifyOtp,
+  onForgotPassword,
+  onResetPassword,
   onSandboxLogin,
   onGoogleLogin,
   onSuccess,
+  onForgotMode,
   error,
   notice,
   clearError,
@@ -520,6 +545,15 @@ export const SignInPage = ({
         return;
       }
 
+      if (mode === "forgot") {
+        if (onForgotPassword) {
+          await onForgotPassword(email);
+        }
+        setResendCooldown(60);
+        setStep("code");
+        return;
+      }
+
       if (onRegisterSubmit) {
         await onRegisterSubmit(fullName, email, password);
       }
@@ -562,7 +596,9 @@ export const SignInPage = ({
             const otpCode = newCode.join("");
             let verified = true;
 
-            if (onVerifyOtp) {
+            if (mode === "forgot" && onResetPassword) {
+              await onResetPassword(email, otpCode, password);
+            } else if (onVerifyOtp) {
               verified = await onVerifyOtp(email, otpCode);
             }
 
@@ -613,7 +649,11 @@ export const SignInPage = ({
     setLocalError(null);
     try {
       if (onSendOtp) {
-        await onSendOtp(email);
+        if (mode === "forgot" && onForgotPassword) {
+          await onForgotPassword(email);
+        } else {
+          await onSendOtp(email);
+        }
       }
       setResendCooldown(60);
     } catch (err: any) {
@@ -731,29 +771,33 @@ export const SignInPage = ({
                   >
                     <div className="space-y-1">
                       <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">
-                        {mode === "register" ? "Create Account" : "Welcome Back"}
+                        {mode === "register" ? "Create Account" : mode === "forgot" ? "Reset Password" : "Welcome Back"}
                       </h1>
                       <p className="text-[1.4rem] text-white/70 font-light">
-                        {mode === "register" ? "Join AscendIQ today" : "Sign in to AscendIQ"}
+                        {mode === "register" ? "Join AscendIQ today" : mode === "forgot" ? "Verify your email to set a new password" : "Sign in to AscendIQ"}
                       </p>
                     </div>
 
                     <div className="space-y-4">
-                      <button
-                        type="button"
-                        onClick={handleGoogleLogin}
-                        disabled={loading || !onGoogleLogin}
-                        className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors disabled:opacity-50"
-                      >
-                        <span className="text-lg">G</span>
-                        <span>Sign in with Google</span>
-                      </button>
+                      {mode !== "forgot" && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            disabled={loading || !onGoogleLogin}
+                            className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors disabled:opacity-50"
+                          >
+                            <span className="text-lg">G</span>
+                            <span>Sign in with Google</span>
+                          </button>
 
-                      <div className="flex items-center gap-4">
-                        <div className="h-px bg-white/10 flex-1" />
-                        <span className="text-white/40 text-sm">or</span>
-                        <div className="h-px bg-white/10 flex-1" />
-                      </div>
+                          <div className="flex items-center gap-4">
+                            <div className="h-px bg-white/10 flex-1" />
+                            <span className="text-white/40 text-sm">or</span>
+                            <div className="h-px bg-white/10 flex-1" />
+                          </div>
+                        </>
+                      )}
 
                       <form onSubmit={handleCredentialsSubmit} className="space-y-3">
                         {mode === "register" && (
@@ -779,7 +823,7 @@ export const SignInPage = ({
                         <div className="relative">
                           <input
                             type="password"
-                            placeholder="Password (min 8 characters)"
+                            placeholder={mode === "forgot" ? "New Password (min 8 characters)" : "Password (min 8 characters)"}
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setLocalError(null); }}
                             className="w-full backdrop-blur-[1px] bg-transparent text-white border border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border-white/30 text-center placeholder:text-white/30"
@@ -810,9 +854,20 @@ export const SignInPage = ({
                     {/* Toggle mode */}
                     <div className="text-sm text-white/40">
                       {mode === "login" ? (
-                        <span>Don't have an account?{" "}
+                        <div className="flex flex-col gap-2">
+                          <span>Don't have an account?{" "}
+                            <button onClick={onToggleMode} className="underline text-white/60 hover:text-white/80 transition-colors">
+                              Sign up
+                            </button>
+                          </span>
+                          <button onClick={onForgotMode} className="underline text-white/50 hover:text-white/80 transition-colors">
+                            Forgot password?
+                          </button>
+                        </div>
+                      ) : mode === "forgot" ? (
+                        <span>Remembered it?{" "}
                           <button onClick={onToggleMode} className="underline text-white/60 hover:text-white/80 transition-colors">
-                            Sign up
+                            Back to login
                           </button>
                         </span>
                       ) : (
@@ -950,10 +1005,10 @@ export const SignInPage = ({
                   >
                     <div className="space-y-1">
                       <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">
-                        {mode === "register" ? "Email verified!" : "You're in!"}
+                        {mode === "register" ? "Email verified!" : mode === "forgot" ? "Password updated!" : "You're in!"}
                       </h1>
                       <p className="text-[1.25rem] text-white/50 font-light">
-                        {mode === "register" ? "Log in to continue to AscendIQ" : "Welcome to AscendIQ"}
+                        {mode === "register" ? "Log in to continue to AscendIQ" : mode === "forgot" ? "Log in with your new password" : "Welcome to AscendIQ"}
                       </p>
                     </div>
 
@@ -977,7 +1032,7 @@ export const SignInPage = ({
                       onClick={onSuccess}
                       className="w-full rounded-full bg-white text-black font-medium py-3 hover:bg-white/90 transition-colors"
                     >
-                      {mode === "register" ? "Go to Login" : "Continue to Dashboard"}
+                      {mode === "register" || mode === "forgot" ? "Go to Login" : "Continue to Dashboard"}
                     </motion.button>
                   </motion.div>
                 )}

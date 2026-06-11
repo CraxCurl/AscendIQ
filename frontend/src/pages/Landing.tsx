@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Target, Zap } from 'lucide-react';
+import { ArrowRight, Code2, Sparkles, Target, Trophy, Users, Zap, X } from 'lucide-react';
 import { CanvasRevealEffect, MiniNavbar } from '../components/ui/sign-in-flow-1';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ const Landing = () => {
             />
           </div>
         </section>
+
       </div>
     </div>
   );

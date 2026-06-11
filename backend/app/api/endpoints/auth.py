@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
@@ -38,6 +39,11 @@ class OtpRequest(BaseModel):
 class OtpVerifyRequest(BaseModel):
     email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     code: str = Field(..., min_length=6, max_length=6)
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=8)
 
 class FirebaseLoginRequest(BaseModel):
     id_token: str = Field(..., min_length=20)
@@ -115,6 +121,10 @@ async def firebase_login(payload: FirebaseLoginRequest):
     try:
         claims = verify_firebase_id_token(payload.id_token)
     except Exception as exc:
+        with open("firebase_error.txt", "w") as f:
+            f.write(str(exc) + "\\n")
+            import traceback
+            f.write(traceback.format_exc())
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Firebase login token") from exc
 
     email = (claims.get("email") or "").lower()
@@ -148,9 +158,9 @@ async def register(credentials: RegisterRequest):
 
     user = storage.replace_unverified_user(email, hash_password(credentials.password), credentials.full_name)
     code = otp_service.generate_code()
-    storage.store_otp(email, code)
+    storage.store_otp(email, code, "registration")
     try:
-        otp_service.send_otp_email(email, code, credentials.full_name)
+        await asyncio.to_thread(otp_service.send_otp_email, email, code, credentials.full_name, "registration")
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -178,9 +188,9 @@ async def send_otp(payload: OtpRequest):
         raise HTTPException(status_code=400, detail="This account is already verified. Please log in with your password.")
 
     code = otp_service.generate_code()
-    storage.store_otp(email, code)
+    storage.store_otp(email, code, "registration")
     try:
-        otp_service.send_otp_email(email, code, user.get("full_name"))
+        await asyncio.to_thread(otp_service.send_otp_email, email, code, user.get("full_name"), "registration")
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"message": "OTP sent", "email": email}
@@ -188,9 +198,33 @@ async def send_otp(payload: OtpRequest):
 @router.post("/verify-otp")
 async def verify_otp(payload: OtpVerifyRequest):
     email = payload.email.lower()
-    if not storage.verify_otp(email, payload.code):
+    if not storage.verify_registration_otp(email, payload.code):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     return {"message": "Email verified. Please log in to continue.", "verified": True}
+
+@router.post("/forgot-password")
+async def forgot_password(payload: OtpRequest):
+    email = payload.email.lower()
+    user = storage.get_user(email)
+    if user and user.get("is_verified"):
+        code = otp_service.generate_code()
+        storage.store_otp(email, code, "password_reset")
+        try:
+            await asyncio.to_thread(otp_service.send_otp_email, email, code, user.get("full_name"), "password_reset")
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {"message": "If an account exists, a password reset code has been sent.", "email": email}
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    email = payload.email.lower()
+    user = storage.get_user(email)
+    if not user or not storage.verify_password_reset_otp(email, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+
+    storage.update_password(email, hash_password(payload.new_password))
+    return {"message": "Password updated. Please log in with your new password."}
 
 @router.get("/me")
 async def me(current_user: dict = Depends(get_current_user)):

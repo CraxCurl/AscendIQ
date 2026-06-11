@@ -7,11 +7,11 @@ AscendIQ is an AI-powered career operating system for students and early-career 
 - Registration with one-time email OTP verification
 - Password login after verification, with no OTP required for normal login
 - Google sign-in through Firebase Authentication
+- Forgot-password reset through email OTP
 - MongoDB-backed users, verification state, and AI analysis records
 - Resume upload support for PDF and DOCX
 - Required onboarding after login: upload a resume or describe yourself
-- Multi-agent AI career analytics for dashboard, roadmap, opportunities, resume, LeetCode practice, and interview prep
-- LeetCode Analyzer Agent powered by the bundled `backend/app/data/leetcode_problems.json` dataset
+- AI career analytics for dashboard, roadmap, opportunities, resume, and interview prep
 - AI-generated career health score, skill gaps, action plan, opportunity matches, ATS feedback, and interview practice
 - Developer sandbox login for local testing
 
@@ -24,7 +24,7 @@ AscendIQ is an AI-powered career operating system for students and early-career 
 - PyMongo and Motor dependencies
 - MongoDB
 - Firebase Authentication for Google sign-in
-- Gemini API keys for multi-agent analysis
+- Gemini-powered analysis
 - Groq configuration support
 - Resend email API
 - JWT authentication
@@ -61,7 +61,6 @@ AscendIQ/
 |   |       |-- gemini_analysis.py
 |   |       |-- otp_service.py
 |   |       |-- storage.py
-|   |   |-- data/leetcode_problems.json
 |   |-- main.py
 |   |-- requirements.txt
 |-- frontend/
@@ -91,13 +90,7 @@ DATABASE_NAME=ascendiq
 API_KEY=your_groq_api_key
 GROQ_MODEL=llama-3.3-70b-versatile
 
-GEMINI_API_KEY=default_gemini_key
-PROFILE_AGENT_API_KEY=key_for_profile_strategist
-SKILL_ROADMAP_AGENT_API_KEY=key_for_skill_roadmap
-RESUME_ATS_AGENT_API_KEY=key_for_resume_ats
-OPPORTUNITY_INTERVIEW_AGENT_API_KEY=key_for_opportunity_interview
-LEETCODE_AGENT_API_KEY=key_for_leetcode_analyzer
-MASTER_AGENT_API_KEY=key_for_master_synthesis
+GEMINI_API_KEY=your_gemini_key
 GEMINI_MODEL=gemini-2.5-flash
 
 RESEND_API_KEY=your_resend_api_key
@@ -109,8 +102,6 @@ JWT_SECRET=replace_with_a_long_random_secret
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 ```
-
-The six Gemini keys can also be named `AI_AGENT_1_API_KEY` through `AI_AGENT_5_API_KEY` and `AI_MASTER_API_KEY`, or `API_KEY_1` through `API_KEY_6`. If a specialist key is missing, AscendIQ falls back to `GEMINI_API_KEY`; if that is also missing or an API call fails, deterministic local fallback logic still returns usable analytics.
 
 Create `frontend/.env` if you want to override the local backend URL:
 
@@ -185,6 +176,8 @@ Google sign-in users are stored in the same collection. For those accounts, `is_
 6. User logs in with email and password.
 7. Login does not send OTP after the account is verified.
 
+Forgot password uses a separate `password_reset` OTP purpose, so it does not collide with registration OTPs. A verified user requests a reset code, enters the OTP plus a new password, and then logs in normally.
+
 ## Google Sign-In Flow
 
 1. Frontend opens Firebase Google sign-in popup.
@@ -238,6 +231,8 @@ http://localhost:5173
 | `POST` | `/api/auth/verify-otp` | Verify registration OTP and activate account |
 | `POST` | `/api/auth/login` | Login verified user with email and password |
 | `POST` | `/api/auth/firebase-login` | Verify Firebase Google ID token and issue AscendIQ JWT |
+| `POST` | `/api/auth/forgot-password` | Send password reset OTP to an existing verified user |
+| `POST` | `/api/auth/reset-password` | Verify reset OTP and save a new password |
 | `POST` | `/api/auth/sandbox-login` | Local development sandbox login |
 | `GET` | `/api/auth/me` | Return current authenticated user |
 | `POST` | `/api/profile/analyze-intake` | Upload resume/about-yourself and generate AI analytics |

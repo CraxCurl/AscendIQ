@@ -3,24 +3,26 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { SignInPage } from '../ui/sign-in-flow-1';
 import { useAuth } from '@/auth';
 
+type AuthMode = 'login' | 'register' | 'forgot';
+
 export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) => {
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, sendOtp, verifyOtp, sandboxLogin, googleLogin } = useAuth();
+  const { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, sandboxLogin, googleLogin } = useAuth();
   
   const from = (location.state as any)?.from?.pathname || '/dashboard';
   const notice = (location.state as any)?.notice;
 
   const handleToggleMode = () => {
-    setMode(prev => (prev === 'login' ? 'register' : 'login'));
+    setMode(prev => (prev === 'register' || prev === 'forgot' ? 'login' : 'register'));
   };
 
   const handleSuccess = () => {
-    if (mode === 'register') {
+    if (mode === 'register' || mode === 'forgot') {
       navigate('/login', {
         replace: true,
-        state: { notice: 'Email verified. Please log in with your password.' },
+        state: { notice: mode === 'forgot' ? 'Password updated. Please log in.' : 'Email verified. Please log in with your password.' },
       });
       return;
     }
@@ -40,10 +42,13 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
       onRegisterSubmit={register}
       onSendOtp={sendOtp}
       onVerifyOtp={verifyOtp}
+      onForgotPassword={forgotPassword}
+      onResetPassword={resetPassword}
       onSandboxLogin={sandboxLogin}
       onGoogleLogin={handleGoogleLogin}
       onSuccess={handleSuccess}
       notice={notice}
+      onForgotMode={() => setMode('forgot')}
       isDev={import.meta.env.MODE === 'development'}
     />
   );

@@ -107,7 +107,7 @@ async def analyze_intake(
         "experience_level": "Student/Entry Level",
     }
 
-    analysis = await asyncio.to_thread(generate_analysis, profile)
+    analysis = await generate_analysis(profile)
     record = storage.save_analysis(current_user["email"], profile, analysis)
     return {"status": "success", **record}
 

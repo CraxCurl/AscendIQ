@@ -1,15 +1,11 @@
 import React from 'react';
 import {
-  Bar,
-  BarChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
   Radar,
   RadarChart,
   ResponsiveContainer,
-  XAxis,
-  YAxis,
 } from 'recharts';
 import { AlertCircle, Briefcase, CalendarCheck, FileText, MessageSquare, Sparkles, Zap } from 'lucide-react';
 import AppShell from '../components/AppShell';
@@ -17,34 +13,35 @@ import { useAnalysis } from '../analysis';
 
 const Dashboard = () => {
   const { record } = useAnalysis();
+  const [modalContent, setModalContent] = React.useState<{title: string, content: React.ReactNode} | null>(null);
 
-if (!record || !record.analysis || !record.profile) {
-  return (
-    <AppShell>
-      <div className="text-center py-10 glass-panel mt-10">
-        <h2 className="text-2xl font-bold text-white/80">
-          No analysis data available
-        </h2>
-        <p className="text-white/50 mt-2">
-          Please upload your profile and run analysis again.
-        </p>
-      </div>
-    </AppShell>
-  );
-}
+  if (!record || !record.analysis || !record.profile) {
+    return (
+      <AppShell>
+        <div className="text-center py-10 glass-panel mt-10">
+          <h2 className="text-2xl font-bold text-white/80">
+            No analysis data available
+          </h2>
+          <p className="text-white/50 mt-2">
+            Please upload your profile and run analysis again.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
-const analysis = record.analysis;
-const profile = record.profile;
+  const analysis = record.analysis;
+  const profile = record.profile;
 
-const radarData = (analysis.radar || []).map((point: any) => ({
-  ...point,
-  A: point.score,
-  fullMark: 100,
-}));
+  const radarData = (analysis.radar || []).map((point: any) => ({
+    ...point,
+    A: point.score,
+    fullMark: 100,
+  }));
 
-const updatedAt = record.updated_at
-  ? new Date(record.updated_at).toLocaleDateString()
-  : "Unknown";
+  const updatedAt = record.updated_at
+    ? new Date(record.updated_at).toLocaleDateString()
+    : "Unknown";
 
   return (
     <AppShell>
@@ -81,16 +78,20 @@ const updatedAt = record.updated_at
           </div>
         </Panel>
 
-        <Panel title={`Skill Gap Against ${profile.target_role} Roles`} className="xl:col-span-2">
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analysis.skill_gaps || []} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                <XAxis dataKey="skill" stroke="rgba(255,255,255,0.4)" tickLine={false} axisLine={false} />
-                <YAxis stroke="rgba(255,255,255,0.4)" tickLine={false} axisLine={false} domain={[0, 100]} />
-                <Bar dataKey="target" fill="rgba(255,255,255,0.1)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="current" fill="rgba(255,255,255,0.8)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        <Panel title={`Top Skill Gaps for ${profile.target_role}`} className="xl:col-span-2">
+          <div className="space-y-5 mt-2 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            {(analysis.skill_gaps || []).slice(0, 5).map((gap: any) => (
+              <div key={gap.skill}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-white/90">{gap.skill}</span>
+                  <span className="text-xs font-bold text-white/50">{gap.current} / {gap.target}</span>
+                </div>
+                <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden relative">
+                  <div className="absolute top-0 left-0 h-full bg-white/20 transition-all duration-1000" style={{ width: `${gap.target}%` }} />
+                  <div className="absolute top-0 left-0 h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000" style={{ width: `${gap.current}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </Panel>
       </div>
@@ -98,72 +99,40 @@ const updatedAt = record.updated_at
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
         <Panel title="Mentor's Strategic Action Plan">
           <div className="space-y-4">
-            {(analysis.strategic_plan || []).map((item) => (
-              <ActionItem key={item.title} title={item.title} desc={item.description} impact={item.impact} />
+            {(analysis.strategic_plan || []).map((item: any) => (
+              <ClickableActionItem key={item.title} title={item.title} desc={item.description} impact={item.impact} onClick={() => setModalContent({ title: item.title, content: <p className="text-white/80 leading-relaxed">{item.description}</p> })} />
             ))}
           </div>
         </Panel>
 
         <Panel title="This Week's Priority Queue">
           <div className="space-y-3">
-            {(analysis.priorities || []).map((priority, index) => (
-              <div key={priority} className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm text-white font-medium">
-                  {index + 1}
-                </span>
-                <p className="text-sm text-white/70 leading-relaxed">{priority}</p>
-              </div>
+            {(analysis.priorities || []).map((priority: any, index: number) => (
+              <ClickablePriority key={priority} index={index} priority={priority} onClick={() => setModalContent({ title: `Priority ${index + 1}`, content: <p className="text-white/80 leading-relaxed">{priority}</p> })} />
             ))}
           </div>
         </Panel>
 
         <Panel title="Live Career Signals">
-          <Signal icon={<Briefcase size={18} />} label="Best opportunity match" value={analysis.signals?.best_opportunity_match|| "N/A"} />
-          <Signal icon={<FileText size={18} />} label="Resume blocker" value={analysis.signals?.resume_blocker || "N/A"} />
-          <Signal icon={<MessageSquare size={18} />} label="Interview focus" value={analysis.signals?.interview_focus || "N/A"} />
-          <Signal icon={<CalendarCheck size={18} />} label="Next milestone" value={analysis.signals?.next_milestone || "N/A"} />
-          <Signal icon={<AlertCircle size={18} />} label="Risk" value={analysis.signals?.risk || "N/A"} />
+          <ClickableSignal icon={<Briefcase size={18} />} label="Best opportunity match" value={analysis.signals?.best_opportunity_match|| "N/A"} onClick={() => setModalContent({ title: "Best opportunity match", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.best_opportunity_match || "N/A"}</p> })} />
+          <ClickableSignal icon={<FileText size={18} />} label="Resume blocker" value={analysis.signals?.resume_blocker || "N/A"} onClick={() => setModalContent({ title: "Resume blocker", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.resume_blocker || "N/A"}</p> })} />
+          <ClickableSignal icon={<MessageSquare size={18} />} label="Interview focus" value={analysis.signals?.interview_focus || "N/A"} onClick={() => setModalContent({ title: "Interview focus", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.interview_focus || "N/A"}</p> })} />
+          <ClickableSignal icon={<CalendarCheck size={18} />} label="Next milestone" value={analysis.signals?.next_milestone || "N/A"} onClick={() => setModalContent({ title: "Next milestone", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.next_milestone || "N/A"}</p> })} />
+          <ClickableSignal icon={<AlertCircle size={18} />} label="Risk" value={analysis.signals?.risk || "N/A"} onClick={() => setModalContent({ title: "Risk", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.risk || "N/A"}</p> })} />
         </Panel>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-        <Panel title="AI Agent Pipeline">
-          <div className="space-y-4">
-            {(analysis.agent_reports || []).map((agent) => (
-              <div key={agent.agent_name} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-semibold text-white">{agent.agent_name}</p>
-                <p className="mt-2 text-sm text-white/60 leading-relaxed">{agent.summary || 'Specialist analysis completed.'}</p>
-              </div>
-            ))}
-            {analysis.master_summary && (
-              <div className="rounded-xl border border-white/15 bg-white/10 p-4">
-                <p className="text-xs uppercase tracking-wider text-white/40 font-semibold">Master Career Synthesis Agent</p>
-                <p className="mt-2 text-sm text-white/70 leading-relaxed">{analysis.master_summary}</p>
-              </div>
-            )}
+      {modalContent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setModalContent(null)}>
+          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl max-w-lg w-full shadow-2xl relative animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-4 right-4 text-white/50 hover:text-white" onClick={() => setModalContent(null)}>
+              ✕
+            </button>
+            <h3 className="text-xl font-semibold text-white mb-4 pr-6">{modalContent.title}</h3>
+            {modalContent.content}
           </div>
-        </Panel>
-
-        <Panel title="LeetCode Practice Plan">
-          <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-4">
-            <p className="text-xs uppercase tracking-wider text-white/40 font-semibold">Dataset Coverage</p>
-            <p className="mt-1 text-2xl font-bold text-white">{analysis.leetcode_plan?.dataset_size || analysis.agent_pipeline?.leetcode_dataset_size || 0} problems</p>
-          </div>
-          <div className="space-y-3">
-            {(analysis.leetcode_plan?.weekly_plan || []).slice(0, 4).map((week) => (
-              <div key={`${week.week}-${week.topic}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-white">Week {week.week}: {week.topic}</p>
-                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-white/60">
-                    {week.problems?.length || 0} picks
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-white/60 leading-relaxed">{week.goal}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
+        </div>
+      )}
     </AppShell>
   );
 };
@@ -205,30 +174,44 @@ const StatCard = ({
   </div>
 );
 
-const ActionItem = ({ title, desc, impact }: { title: string; desc: string; impact: string }) => (
-  <div className="bg-black/40 p-5 rounded-xl border border-white/5">
-    <div className="flex justify-between items-start gap-3 mb-2">
-      <h4 className="font-semibold text-white">{title}</h4>
-      <span
-        className={`text-[10px] px-2 py-1 rounded-full uppercase font-bold whitespace-nowrap ${
-          impact === 'High' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/70'
-        }`}
-      >
-        {impact} Impact
-      </span>
+const ClickableActionItem = ({ title, desc, impact, onClick }: { title: string; desc: string; impact: string; onClick: () => void }) => {
+  return (
+    <div className="bg-black/40 p-4 rounded-xl border border-white/5 cursor-pointer hover:bg-white/5 transition-colors" onClick={onClick}>
+      <div className="flex justify-between items-center gap-3">
+        <h4 className="font-semibold text-white text-sm truncate">{title}</h4>
+        <span
+          className={`shrink-0 text-[10px] px-2 py-1 rounded-full uppercase font-bold whitespace-nowrap ${
+            impact === 'High' ? 'bg-white/20 text-white' : 'bg-white/10 text-white/70'
+          }`}
+        >
+          {impact}
+        </span>
+      </div>
     </div>
-    <p className="text-sm text-white/60 leading-relaxed">{desc}</p>
-  </div>
-);
+  );
+};
 
-const Signal = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
-  <div className="flex gap-4 py-4 border-b border-white/5 last:border-b-0">
-    <div className="mt-0.5 text-white/50">{icon}</div>
-    <div>
-      <p className="text-xs uppercase tracking-wider text-white/40 font-semibold">{label}</p>
-      <p className="text-sm text-white mt-1.5 leading-snug">{value}</p>
+const ClickablePriority = ({ index, priority, onClick }: { index: number; priority: string; onClick: () => void }) => {
+  return (
+    <div className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-4 cursor-pointer hover:bg-white/10 transition-colors" onClick={onClick}>
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm text-white font-medium">
+        {index + 1}
+      </span>
+      <p className="text-sm text-white/70 truncate">{priority}</p>
     </div>
-  </div>
-);
+  );
+};
+
+const ClickableSignal = ({ icon, label, value, onClick }: { icon: React.ReactNode; label: string; value: string; onClick: () => void }) => {
+  return (
+    <div className="flex gap-4 py-3 border-b border-white/5 last:border-b-0 cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded-lg transition-colors" onClick={onClick}>
+      <div className="mt-0.5 text-white/50 shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs uppercase tracking-wider text-white/40 font-semibold mb-1">{label}</p>
+        <p className="text-sm text-white truncate">{value}</p>
+      </div>
+    </div>
+  );
+};
 
 export default Dashboard;

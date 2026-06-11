@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { signInWithPopup } from 'firebase/auth';
+import { firebaseAuth, googleProvider } from './firebase';
 
 type AuthUser = {
   email: string;
+  full_name?: string;
+  auth_provider?: string;
+  providers?: string[];
+  photo_url?: string;
 };
 
 type AuthResult = {
@@ -9,9 +15,9 @@ type AuthResult = {
   user: AuthUser;
 };
 
-type SignupResult = {
+type MessageResult = {
   message: string;
-  user: AuthUser;
+  user?: AuthUser;
 };
 
 type AuthContextValue = {
@@ -19,7 +25,14 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (fullName: string, email: string, password: string) => Promise<string>;
   signup: (email: string, password: string) => Promise<string>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<boolean>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<string>;
+  sandboxLogin: () => Promise<void>;
+  googleLogin: () => Promise<void>;
   logout: () => void;
 };
 
@@ -34,11 +47,11 @@ const readStoredUser = () => {
   return storedUser ? (JSON.parse(storedUser) as AuthUser) : null;
 };
 
-const requestAuth = async <T,>(path: 'login' | 'signup', email: string, password: string) => {
+const requestAuth = async <T,>(path: string, body: Record<string, unknown> = {}) => {
   const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
@@ -66,11 +79,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       isAuthenticated: Boolean(token),
       login: async (email, password) => {
-        storeSession(await requestAuth<AuthResult>('login', email, password));
+        storeSession(await requestAuth<AuthResult>('login', { email, password }));
+      },
+      register: async (fullName, email, password) => {
+        const result = await requestAuth<MessageResult>('register', { full_name: fullName, email, password });
+        return result.message;
       },
       signup: async (email, password) => {
-        const result = await requestAuth<SignupResult>('signup', email, password);
+        const result = await requestAuth<MessageResult>('signup', { email, password });
         return result.message;
+      },
+      sendOtp: async (email) => {
+        await requestAuth<MessageResult>('send-otp', { email });
+      },
+      verifyOtp: async (email, code) => {
+        const result = await requestAuth<{ verified: boolean }>('verify-otp', { email, code });
+        return Boolean(result.verified);
+      },
+      forgotPassword: async (email) => {
+        const result = await requestAuth<MessageResult>('forgot-password', { email });
+        return result.message;
+      },
+      resetPassword: async (email, code, newPassword) => {
+        const result = await requestAuth<MessageResult>('reset-password', {
+          email,
+          code,
+          new_password: newPassword,
+        });
+        return result.message;
+      },
+      sandboxLogin: async () => {
+        storeSession(await requestAuth<AuthResult>('sandbox-login'));
+      },
+      googleLogin: async () => {
+        const credential = await signInWithPopup(firebaseAuth, googleProvider);
+        const idToken = await credential.user.getIdToken();
+        storeSession(await requestAuth<AuthResult>('firebase-login', { id_token: idToken }));
       },
       logout: () => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);

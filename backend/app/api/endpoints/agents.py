@@ -14,6 +14,6 @@ async def analyze_profile(profile: UserProfile, current_user: dict = Depends(get
     profile_data = profile.model_dump()
     profile_data["email"] = current_user["email"]
     profile_data["user_id"] = current_user["email"]
-    analysis = await asyncio.to_thread(generate_analysis, profile_data)
+    analysis = await generate_analysis(profile_data)
     record = storage.save_analysis(current_user["email"], profile_data, analysis)
     return {"status": "success", **record}

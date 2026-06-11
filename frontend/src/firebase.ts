@@ -1,5 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -12,18 +11,8 @@ const firebaseConfig = {
   measurementId: 'G-E0CMBQ3BKT',
 };
 
-export const firebaseApp = initializeApp(firebaseConfig);
+export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
 
-googleProvider.setCustomParameters({
-  prompt: 'select_account',
-});
-
-if (typeof window !== 'undefined') {
-  void isSupported().then((supported) => {
-    if (supported) {
-      getAnalytics(firebaseApp);
-    }
-  });
-}
+googleProvider.setCustomParameters({ prompt: 'select_account' });

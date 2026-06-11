@@ -1,7 +1,8 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Briefcase, FileText, LayoutDashboard, LogOut, MessageSquare, Target } from 'lucide-react';
 import { useAuth } from '../auth';
+import { ExpandableTabs } from './ui/expandable-tabs';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const navItems = [
 
 const AppShell = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, user } = useAuth();
 
   const handleLogout = () => {
@@ -22,7 +24,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="flex min-h-screen bg-black text-white selection:bg-white/30 selection:text-white">
-      <aside className="w-64 shrink-0 border-r border-white/10 p-6 flex flex-col gap-8 bg-black">
+      <aside className="w-64 shrink-0 border-r border-white/10 p-6 flex flex-col gap-6 bg-black">
         <NavLink
           to="/"
           className="text-2xl font-bold tracking-tight text-white glow-text"
@@ -30,22 +32,16 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
           AscendIQ
         </NavLink>
         <nav className="flex flex-col gap-2">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive
-                    ? 'bg-white/10 text-white border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white'
-                }`
+          <ExpandableTabs 
+            tabs={navItems.map(item => ({ title: item.label, icon: item.icon, to: item.to })) as any} 
+            className="flex-col items-start w-full border-0 bg-transparent p-0 gap-2 shadow-none"
+            defaultSelected={navItems.findIndex(item => location.pathname.startsWith(item.to))}
+            onChange={(index) => {
+              if (index !== null) {
+                navigate(navItems[index].to);
               }
-            >
-              <Icon size={20} />
-              <span className="font-medium">{label}</span>
-            </NavLink>
-          ))}
+            }}
+          />
         </nav>
 
         <div className="mt-auto border-t border-white/10 pt-5">

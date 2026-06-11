@@ -156,7 +156,7 @@ def mark_login(email: str) -> None:
     )
 
 
-def store_otp(email: str, code: str) -> None:
+def store_otp(email: str, code: str, purpose: str = "registration") -> None:
     users = get_users_collection()
     normalized_email = email.lower()
     users.update_one(
@@ -165,6 +165,7 @@ def store_otp(email: str, code: str) -> None:
             "$set": {
                 "verification": {
                     "code_hash": _hash_otp(normalized_email, code),
+                    "purpose": purpose,
                     "expires_at": _utcnow() + timedelta(minutes=10),
                     "sent_at": _utcnow(),
                     "attempts": 0,
@@ -175,12 +176,12 @@ def store_otp(email: str, code: str) -> None:
     )
 
 
-def verify_otp(email: str, code: str) -> bool:
+def _verify_otp(email: str, code: str, purpose: str) -> bool:
     users = get_users_collection()
     normalized_email = email.lower()
     user = users.find_one({"email": normalized_email})
     verification = (user or {}).get("verification")
-    if not verification:
+    if not verification or verification.get("purpose") != purpose:
         return False
 
     expires_at = verification.get("expires_at")
@@ -202,18 +203,46 @@ def verify_otp(email: str, code: str) -> bool:
         )
         return False
 
+    delete_otp(normalized_email)
+    return True
+
+
+def verify_registration_otp(email: str, code: str) -> bool:
+    if not _verify_otp(email, code, "registration"):
+        return False
+    users = get_users_collection()
     users.update_one(
-        {"email": normalized_email},
+        {"email": email.lower()},
         {
             "$set": {
                 "is_verified": True,
                 "email_verified_at": _utcnow(),
                 "updated_at": _utcnow(),
             },
-            "$unset": {"verification": ""},
         },
     )
     return True
+
+
+def verify_password_reset_otp(email: str, code: str) -> bool:
+    return _verify_otp(email, code, "password_reset")
+
+
+def update_password(email: str, hashed_password: str) -> None:
+    users = get_users_collection()
+    users.update_one(
+        {"email": email.lower()},
+        {
+            "$set": {
+                "hashed_password": hashed_password,
+                "auth_provider": "password",
+                "is_verified": True,
+                "updated_at": _utcnow(),
+            },
+            "$addToSet": {"providers": "password"},
+            "$unset": {"verification": ""},
+        },
+    )
 
 
 def delete_otp(email: str) -> None:

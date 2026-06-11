@@ -108,3 +108,20 @@ export const submitIntake = async (token: string, formData: FormData) => {
 
   return (await response.json()) as AnalysisRecord & { status: string };
 };
+
+export const interviewChat = async (token: string, messages: { role: string; content: string }[]) => {
+  const response = await fetch(`${API_BASE_URL}/api/interview/chat`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return (await response.json()) as { reply: string };
+};
