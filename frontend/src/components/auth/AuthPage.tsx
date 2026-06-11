@@ -7,6 +7,7 @@ type AuthMode = 'login' | 'register' | 'forgot';
 
 export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) => {
   const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [resetKey, setResetKey] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, sandboxLogin, googleLogin } = useAuth();
@@ -21,6 +22,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
   const handleSuccess = () => {
     if (mode === 'register' || mode === 'forgot') {
       setMode('login');
+      setResetKey(prev => prev + 1);
       navigate('/login', {
         replace: true,
         state: { notice: mode === 'forgot' ? 'Password updated. Please log in.' : 'Email verified. Please log in with your password.' },
@@ -37,7 +39,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
 
   return (
     <SignInPage
-      key={location.key}
+      key={resetKey}
       mode={mode}
       onToggleMode={handleToggleMode}
       onLoginSubmit={login}
