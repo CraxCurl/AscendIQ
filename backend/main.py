@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, profile, agents, roadmap, opportunities, interview, leetcode
+from app.api.endpoints import auth, profile, agents, roadmap, opportunities, interview, leetcode, resume_builder
 from app.core.config import settings
 from app.services import storage
 
