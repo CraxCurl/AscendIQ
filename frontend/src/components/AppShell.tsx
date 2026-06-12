@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Briefcase, FileText, LayoutDashboard, LogOut, MessageSquare, Target, Map } from 'lucide-react';
 import { useAuth } from '../auth';
 import { ExpandableTabs } from './ui/expandable-tabs';
+import { CanvasRevealEffect } from './ui/sign-in-flow-1';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,9 +25,19 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-black text-white selection:bg-white/30 selection:text-white">
+    <div className="flex flex-col md:flex-row min-h-screen bg-black text-white selection:bg-white/30 selection:text-white relative">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <CanvasRevealEffect
+          animationSpeed={3}
+          containerClassName="bg-black"
+          colors={[[255, 255, 255], [255, 255, 255]]}
+          dotSize={6}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.8)_0%,_transparent_100%)]" />
+      </div>
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between border-b border-white/10 p-4 bg-black sticky top-0 z-40">
+      <div className="md:hidden flex items-center justify-between border-b border-white/10 p-4 bg-black/40 backdrop-blur-md sticky top-0 z-40">
         <NavLink to="/" className="text-xl font-bold tracking-tight text-white glow-text">AscendIQ</NavLink>
         <button onClick={handleLogout} className="text-white/60 hover:text-white flex items-center gap-2 text-sm">
           <LogOut size={18} />
@@ -35,7 +46,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-white/10 p-6 md:flex flex-col gap-6 bg-black sticky top-0 h-screen">
+      <aside className="hidden w-64 shrink-0 border-r border-white/10 p-6 md:flex flex-col gap-6 bg-black/40 backdrop-blur-md sticky top-0 h-screen z-10">
         <NavLink
           to="/"
           className="text-2xl font-bold tracking-tight text-white glow-text"
@@ -69,9 +80,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto relative pb-24 md:pb-8">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 left-1/4 w-1/2 h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <main className="flex-1 p-4 md:p-8 overflow-auto relative pb-24 md:pb-8 z-10">
         {children}
       </main>
 
