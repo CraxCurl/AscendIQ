@@ -35,7 +35,7 @@ interface SignInPageProps {
   onForgotPassword?: (email: string) => Promise<string>;
   onResetPassword?: (email: string, code: string, newPassword: string) => Promise<string>;
   onSandboxLogin?: () => Promise<void>;
-  onGoogleLogin?: () => Promise<void>;
+
   onSuccess?: () => void;
   onForgotMode?: () => void;
   error?: string | null;
@@ -477,7 +477,7 @@ export const SignInPage = ({
   onForgotPassword,
   onResetPassword,
   onSandboxLogin,
-  onGoogleLogin,
+
   onSuccess,
   onForgotMode,
   error,
@@ -682,24 +682,7 @@ export const SignInPage = ({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (!onGoogleLogin) return;
-    setLoading(true);
-    setLocalError(null);
-    clearError?.();
-    try {
-      await onGoogleLogin();
-      setReverseCanvasVisible(true);
-      setTimeout(() => setInitialCanvasVisible(false), 50);
-      setTimeout(() => {
-        setStep("success");
-        setLoading(false);
-      }, 1500);
-    } catch (err: any) {
-      setLocalError(err?.message || "Google sign-in failed");
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className={cn("flex w-[100%] flex-col min-h-screen bg-black relative", className)}>
@@ -780,25 +763,7 @@ export const SignInPage = ({
                     </div>
 
                     <div className="space-y-4">
-                      {mode !== "forgot" && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={loading || !onGoogleLogin}
-                            className="backdrop-blur-[2px] w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full py-3 px-4 transition-colors disabled:opacity-50"
-                          >
-                            <span className="text-lg">G</span>
-                            <span>Sign in with Google</span>
-                          </button>
 
-                          <div className="flex items-center gap-4">
-                            <div className="h-px bg-white/10 flex-1" />
-                            <span className="text-white/40 text-sm">or</span>
-                            <div className="h-px bg-white/10 flex-1" />
-                          </div>
-                        </>
-                      )}
 
                       <form onSubmit={handleCredentialsSubmit} className="space-y-3">
                         {mode === "register" && (

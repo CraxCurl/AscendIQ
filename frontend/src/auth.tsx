@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { signInWithPopup } from 'firebase/auth';
-import { firebaseAuth, googleProvider } from './firebase';
+import { firebaseAuth } from './firebase';
 
 type AuthUser = {
   email: string;
@@ -32,7 +32,7 @@ type AuthContextValue = {
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<string>;
   sandboxLogin: () => Promise<void>;
-  googleLogin: () => Promise<void>;
+
   logout: () => void;
 };
 
@@ -125,11 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       sandboxLogin: async () => {
         storeSession(await requestAuth<AuthResult>('sandbox-login'));
       },
-      googleLogin: async () => {
-        const credential = await signInWithPopup(firebaseAuth, googleProvider);
-        const idToken = await credential.user.getIdToken();
-        storeSession(await requestAuth<AuthResult>('firebase-login', { id_token: idToken }));
-      },
+
       logout: () => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         localStorage.removeItem(USER_STORAGE_KEY);

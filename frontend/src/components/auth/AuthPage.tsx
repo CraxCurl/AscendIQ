@@ -10,7 +10,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
   const [resetKey, setResetKey] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, sandboxLogin, googleLogin } = useAuth();
+  const { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, sandboxLogin } = useAuth();
   
   const from = (location.state as any)?.from?.pathname || '/dashboard';
   const notice = (location.state as any)?.notice;
@@ -32,10 +32,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
     navigate(from, { replace: true });
   };
 
-  const handleGoogleLogin = async () => {
-    await googleLogin();
-    navigate(from, { replace: true });
-  };
+
 
   return (
     <SignInPage
@@ -49,7 +46,7 @@ export const AuthPage = ({ initialMode = 'login' }: { initialMode?: 'login' | 'r
       onForgotPassword={forgotPassword}
       onResetPassword={resetPassword}
       onSandboxLogin={sandboxLogin}
-      onGoogleLogin={handleGoogleLogin}
+
       onSuccess={handleSuccess}
       notice={notice}
       onForgotMode={() => setMode('forgot')}
