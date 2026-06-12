@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Briefcase, FileText, LayoutDashboard, LogOut, MessageSquare, Target } from 'lucide-react';
+import { Briefcase, FileText, LayoutDashboard, LogOut, MessageSquare, Target, Map } from 'lucide-react';
 import { useAuth } from '../auth';
 import { ExpandableTabs } from './ui/expandable-tabs';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/roadmap', label: 'Roadmap', icon: Target },
+  { to: '/career-path', label: 'Mentor Path', icon: Map },
   { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
   { to: '/resume', label: 'Resume Opt', icon: FileText },
   { to: '/interview', label: 'Interview Prep', icon: MessageSquare },

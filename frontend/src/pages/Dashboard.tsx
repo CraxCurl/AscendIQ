@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { AlertCircle, Briefcase, CalendarCheck, FileText, MessageSquare, Sparkles, Zap } from 'lucide-react';
 import AppShell from '../components/AppShell';
+import LeetCodeRecommendations from '../components/LeetCodeRecommendations';
 import { useAnalysis } from '../analysis';
 
 const Dashboard = () => {
@@ -120,6 +121,10 @@ const Dashboard = () => {
           <ClickableSignal icon={<CalendarCheck size={18} />} label="Next milestone" value={analysis.signals?.next_milestone || "N/A"} onClick={() => setModalContent({ title: "Next milestone", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.next_milestone || "N/A"}</p> })} />
           <ClickableSignal icon={<AlertCircle size={18} />} label="Risk" value={analysis.signals?.risk || "N/A"} onClick={() => setModalContent({ title: "Risk", content: <p className="text-white/80 leading-relaxed">{analysis.signals?.risk || "N/A"}</p> })} />
         </Panel>
+      </div>
+
+      <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+        <LeetCodeRecommendations />
       </div>
 
       {modalContent && (

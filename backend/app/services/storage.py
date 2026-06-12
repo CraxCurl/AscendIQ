@@ -26,6 +26,10 @@ def get_analyses_collection():
     return get_client()[settings.DATABASE_NAME]["analyses"]
 
 
+def get_leetcode_collection():
+    return get_client()[settings.DATABASE_NAME]["leetcode_progress"]
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -274,3 +278,29 @@ def save_analysis(email: str, profile: dict, analysis: dict) -> dict:
 def get_analysis(email: str) -> Optional[dict]:
     analyses = get_analyses_collection()
     return _clean(analyses.find_one({"email": email.lower()}))
+
+
+def mark_leetcode_solved(email: str, problem_id: str) -> dict:
+    leetcode = get_leetcode_collection()
+    normalized_email = email.lower()
+    now = _utcnow()
+    result = leetcode.find_one_and_update(
+        {"email": normalized_email},
+        {
+            "$addToSet": {"solved_problems": problem_id},
+            "$set": {"updated_at": now},
+            "$setOnInsert": {"email": normalized_email, "created_at": now}
+        },
+        upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    return _clean(result)
+
+
+def get_solved_leetcode(email: str) -> list[str]:
+    leetcode = get_leetcode_collection()
+    normalized_email = email.lower()
+    record = leetcode.find_one({"email": normalized_email})
+    if record and "solved_problems" in record:
+        return record["solved_problems"]
+    return []

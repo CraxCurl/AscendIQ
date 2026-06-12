@@ -9,6 +9,25 @@ const Opportunities = () => {
   const bestMatch = Math.max(...opportunities.map((item) => item.match), 0);
   const ready = opportunities.filter((item) => item.match >= 80).length;
 
+  const getSearchUrl = (item: any) => {
+    if (item.link && item.link !== '#' && item.link.trim() !== '') return item.link;
+    
+    const query = encodeURIComponent(item.title);
+    const type = (item.type || '').toLowerCase();
+    
+    if (type.includes('hackathon')) {
+      return `https://unstop.com/hackathons?search=${query}`;
+    }
+    if (type.includes('internship') || type.includes('job') || type.includes('full-time')) {
+      return `https://www.linkedin.com/jobs/search/?keywords=${query}`;
+    }
+    if (type.includes('open source') || type.includes('open-source')) {
+      return `https://github.com/search?q=label%3A%22good+first+issue%22+${query}&type=issues`;
+    }
+    
+    return `https://unstop.com/search?q=${query}`;
+  };
+
   return (
     <AppShell>
       <header className="mb-8 animate-slide-up">
@@ -38,7 +57,9 @@ const Opportunities = () => {
             </div>
             <p className="text-sm text-white/60 mb-6 leading-relaxed">Focus areas: {item.focus}</p>
             <a
-              href={item.link || '#'}
+              href={getSearchUrl(item)}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex w-fit items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-colors"
             >
               View Details <ExternalLink size={16} />

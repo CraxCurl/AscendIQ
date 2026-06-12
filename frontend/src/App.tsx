@@ -8,6 +8,7 @@ import Opportunities from './pages/Opportunities';
 import ProfileUpload from './pages/ProfileUpload';
 import ResumeOptimization from './pages/ResumeOptimization';
 import Roadmap from './pages/Roadmap';
+import CareerPath from './pages/CareerPath';
 import { AuthProvider } from './auth';
 import { AnalysisProvider } from './analysis';
 import AnalysisRequired from './components/AnalysisRequired';
@@ -27,6 +28,7 @@ function App() {
               <Route path="/upload" element={<ProtectedRoute><ProfileUpload /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><AnalysisRequired><Dashboard /></AnalysisRequired></ProtectedRoute>} />
               <Route path="/roadmap" element={<ProtectedRoute><AnalysisRequired><Roadmap /></AnalysisRequired></ProtectedRoute>} />
+              <Route path="/career-path" element={<ProtectedRoute><AnalysisRequired><CareerPath /></AnalysisRequired></ProtectedRoute>} />
               <Route path="/opportunities" element={<ProtectedRoute><AnalysisRequired><Opportunities /></AnalysisRequired></ProtectedRoute>} />
               <Route path="/resume" element={<ProtectedRoute><AnalysisRequired><ResumeOptimization /></AnalysisRequired></ProtectedRoute>} />
               <Route path="/interview" element={<ProtectedRoute><AnalysisRequired><InterviewPrep /></AnalysisRequired></ProtectedRoute>} />

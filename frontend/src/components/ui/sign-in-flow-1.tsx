@@ -551,6 +551,7 @@ export const SignInPage = ({
         }
         setResendCooldown(60);
         setStep("code");
+        setLoading(false);
         return;
       }
 
@@ -559,9 +560,9 @@ export const SignInPage = ({
       }
       setResendCooldown(60);
       setStep("code");
+      setLoading(false);
     } catch (err: any) {
       setLocalError(err?.message || "Failed to send verification code");
-    } finally {
       setLoading(false);
     }
   };

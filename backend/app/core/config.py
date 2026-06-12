@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     RESEND_API_KEY: Optional[str] = None
     RESEND_FROM_EMAIL: str = "noreply@stigz.xyz"
 
+    # Proxycurl
+    PROXYCURL_API_KEY: Optional[str] = None
+
     # JWT
     JWT_SECRET_KEY: str = Field(
         default="change-this-in-production",

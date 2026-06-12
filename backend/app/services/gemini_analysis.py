@@ -2,6 +2,7 @@ import json
 import asyncio
 import aiohttp
 from app.core.config import settings
+from app.services.key_manager import key_manager
 
 # --- Fallback and Normalization Logic (Kept Intact) ---
 ROLE_BASELINES = {
@@ -245,7 +246,7 @@ def normalize_analysis(profile, analysis):
 
 async def call_agent(session, api_key, prompt, label):
     if not api_key:
-        api_key = settings.GEMINI_API_KEY # Fallback if specific key is missing
+        api_key = key_manager.get_next_key() # Fallback if specific key is missing
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -267,6 +268,13 @@ async def call_agent(session, api_key, prompt, label):
 async def generate_analysis(profile):
     profile_json = json.dumps(profile)
     
+    # Create a lite profile to save input tokens for non-resume agents
+    lite_profile = profile.copy()
+    if "resume_text" in lite_profile and lite_profile["resume_text"]:
+        # Only keep the first 500 chars for context
+        lite_profile["resume_text"] = lite_profile["resume_text"][:500]
+    lite_profile_json = json.dumps(lite_profile)
+    
     # Define specialized prompts for the 5 agents
     prompt_resume = f"""
 Analyze this profile specifically for Resume & ATS matching. Return ONLY valid JSON:
@@ -278,7 +286,7 @@ Profile: {profile_json}
 """
     prompt_skills = f"""
 Analyze this profile for Technical Skills & Leetcode Readiness. Return ONLY valid JSON:
-Profile: {profile_json}
+Profile: {lite_profile_json}
 {{
   "radar": [{{"subject": "Technical", "score": 0}}, {{"subject": "Projects", "score": 0}}, {{"subject": "Resume", "score": 0}}, {{"subject": "Interview", "score": 0}}, {{"subject": "Exposure", "score": 0}}],
   "skill_gaps": [{{"skill": "", "current": 0, "target": 85}}],
@@ -289,7 +297,7 @@ Profile: {profile_json}
 Analyze this profile and generate a Career Roadmap & Priorities.
 IMPORTANT: Write detailed 2-3 sentence paragraphs for every description and priority. Do not use short bullet points.
 Return ONLY valid JSON:
-Profile: {profile_json}
+Profile: {lite_profile_json}
 {{
   "roadmap": [{{"title": "", "status": "current", "date": "Days 1-15", "description": "Detailed 2-3 sentence paragraph..."}}],
   "strategic_plan": [{{"title": "", "description": "Detailed 2-3 sentence paragraph...", "impact": "High"}}],
@@ -301,7 +309,7 @@ Profile: {profile_json}
 Analyze this profile and suggest relevant Opportunities (Internships, Hackathons, Open Source).
 IMPORTANT: For the 'signals' section, write a detailed, 2-3 sentence paragraph for each signal. Do not use short bullet points.
 Return ONLY valid JSON:
-Profile: {profile_json}
+Profile: {lite_profile_json}
 {{
   "opportunities": [{{"title": "", "type": "", "provider": "", "match": 0, "focus": "", "link": ""}}],
   "signals": {{"best_opportunity_match": "Detailed 2-3 sentence paragraph...", "resume_blocker": "Detailed 2-3 sentence paragraph...", "next_milestone": "Detailed 2-3 sentence paragraph...", "risk": "Detailed 2-3 sentence paragraph..."}}
@@ -311,7 +319,7 @@ Profile: {profile_json}
 Analyze this profile and generate tailored Interview Prep material.
 IMPORTANT: For the 'signals' section, write a detailed, 2-3 sentence paragraph for the signal. Do not use short bullet points.
 Return ONLY valid JSON:
-Profile: {profile_json}
+Profile: {lite_profile_json}
 {{
   "interview_prep": {{"ml_fundamentals": 0, "coding_readiness": 0, "story_bank": 0, "questions": [{{"type": "Technical", "prompt": ""}}]}},
   "signals": {{"interview_focus": "Detailed 2-3 sentence paragraph..."}}
@@ -356,7 +364,7 @@ Return this exact JSON shape. Do not leave numeric fields at 0 unless there is n
   "interview_prep":{{"ml_fundamentals":0,"coding_readiness":0,"story_bank":0,"questions":[{{"type":"","prompt":""}}]}}
 }}
 """
-        master_key = settings.MASTER_AGENT_API_KEY or settings.GEMINI_API_KEY
+        master_key = key_manager.get_next_key()
         master_res = await call_agent(session, master_key, prompt_master, "final")
         
         analysis = master_res.get("final", {})

@@ -48,18 +48,32 @@ const readStoredUser = () => {
 };
 
 const requestAuth = async <T,>(path: string, body: Record<string, unknown> = {}) => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+      signal: controller.signal
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.detail ?? 'Authentication failed');
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.detail ?? 'Authentication failed');
+    }
+
+    return (await response.json()) as T;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw error;
   }
-
-  return (await response.json()) as T;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {

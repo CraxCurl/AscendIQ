@@ -125,3 +125,101 @@ export const interviewChat = async (token: string, messages: { role: string; con
 
   return (await response.json()) as { reply: string };
 };
+
+export const getLeetCodeRecommendations = async (token: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/leetcode/recommendations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json();
+};
+
+export const markLeetCodeSolved = async (token: string, problemId: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/leetcode/solve`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ problem_id: problemId }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json();
+};
+
+export const generateCareerPath = async (token: string, mentorResume: File) => {
+  const formData = new FormData();
+  formData.append('mentor_resume', mentorResume);
+
+  const response = await fetch(`${API_BASE_URL}/api/roadmap/career-path`, {
+    method: 'POST',
+    headers: { 
+      Authorization: `Bearer ${token}` 
+    },
+    body: formData,
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json();
+};
+export const exploreMilestone = async (token: string, title: string, description: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/roadmap/explore-milestone`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ title, description }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json();
+};
+
+export const updateRoadmap = async (token: string, roadmap: any[]) => {
+  const response = await fetch(`${API_BASE_URL}/api/roadmap/update-roadmap`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}` 
+    },
+    body: JSON.stringify({ roadmap }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json();
+};
+
+export const chatResumeBuilder = async (
+  token: string,
+  message: string,
+  current_resume_text: string,
+  target_role: string = "Software Engineer",
+  missing_keywords: string[] = []
+) => {
+  const response = await fetch(`${API_BASE_URL}/api/resume_builder/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      message,
+      current_resume_text,
+      target_role,
+      missing_keywords,
+    }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.json() as { response_message: string; updated_resume_text: string };
+};
+
+export const generateDocx = async (token: string, resume_text: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/resume_builder/generate-docx`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ resume_text }),
+  });
+  if (!response.ok) throw new Error(await parseError(response));
+  return await response.blob();
+};

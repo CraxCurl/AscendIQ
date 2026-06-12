@@ -5,6 +5,7 @@ from typing import List
 
 from app.api.endpoints.auth import get_current_user
 from app.services import storage
+from app.services.key_manager import key_manager
 from app.core.config import settings
 
 router = APIRouter()
@@ -65,7 +66,7 @@ async def interview_chat(request: ChatRequest, current_user: dict = Depends(get_
         }
     }
 
-    api_key = settings.GEMINI_API_KEY
+    api_key = key_manager.get_next_key()
     if not api_key:
         raise HTTPException(status_code=500, detail="Gemini API key is not configured.")
 
