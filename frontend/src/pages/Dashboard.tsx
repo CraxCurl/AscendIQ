@@ -18,7 +18,7 @@ const Dashboard = () => {
 
   if (!record || !record.analysis || !record.profile) {
     return (
-      <AppShell>
+      <AppShell dimBackground>
         <div className="text-center py-10 glass-panel mt-10">
           <h2 className="text-2xl font-bold text-white/80">
             No analysis data available
@@ -45,7 +45,7 @@ const Dashboard = () => {
     : "Unknown";
 
   return (
-    <AppShell>
+    <AppShell dimBackground>
       <header className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start mb-8 animate-slide-up">
         <div>
           <p className="text-sm text-white/60 font-medium mb-2 tracking-widest uppercase">Career command center</p>

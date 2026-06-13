@@ -14,7 +14,13 @@ const navItems = [
   { to: '/interview', label: 'Interview Prep', icon: MessageSquare },
 ];
 
-const AppShell = ({ children }: { children: React.ReactNode }) => {
+const AppShell = ({
+  children,
+  dimBackground = false,
+}: {
+  children: React.ReactNode;
+  dimBackground?: boolean;
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
@@ -35,6 +41,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
           dotSize={6}
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.8)_0%,_transparent_100%)]" />
+        {dimBackground && <div className="absolute inset-0 bg-black/60" />}
       </div>
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between border-b border-white/10 p-4 bg-black/40 backdrop-blur-md sticky top-0 z-40">
