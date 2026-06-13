@@ -32,11 +32,18 @@ htmlcov/
 # Backend local configuration and secrets
 backend/.env
 backend/.env.*
+backend/AscendIQ.env.txt
+backend/otp_log.txt
 backend/firebase-sdk.json
 backend/storage/
 *.pem
 *.key
 *.crt
+
+# Temporary Vite/node timestamps
+*.mjs
+*.mjs.map
+
 
 # Node / Vite
 node_modules/
